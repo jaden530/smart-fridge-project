@@ -1,0 +1,2 @@
+echo "venv/" >> .gitignore
+echo "model_data/yolov3.weights" >> .gitignore
