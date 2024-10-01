@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Fridge</title>
+    <style>
+        /* Your CSS styles here */
+        #capturedImage {
+        display: none;
+        max-width: 100%;
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    </style>
+    
+</head>
+<body>
+    <h1>Smart Fridge</h1>
+    <button onclick="captureImage()">Capture Image</button>
+    <button onclick="detectObjects()">Detect Objects</button>
+    <button onclick="clearInventory()">Clear Inventory</button>
+    <div id="status"></div>
+    <img id="capturedImage" style="display: none; max-width: 100%; margin-top: 20px;">
+    <h2>Inventory</h2>
+    <ul id="inventory"></ul>
+
+    <script>
+        function captureImage() {
+    console.log("Capturing image...");
+    fetch('/capture', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Capture response:", data);
+            document.getElementById('status').innerText = data.message;
+            if (data.image_path) {
+                const imgElement = document.getElementById('capturedImage');
+                imgElement.src = data.image_path + '?t=' + new Date().getTime();
+                imgElement.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('status').innerText = "Error capturing image";
+        });
+}
+
+function detectObjects() {
+    console.log("Detecting objects...");
+    fetch('/detect', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Detect response:", data);
+            document.getElementById('status').innerText = data.message;
+            if (data.image_path) {
+                const imgElement = document.getElementById('capturedImage');
+                imgElement.src = data.image_path + '?t=' + new Date().getTime();
+                imgElement.style.display = 'block';
+            }
+            updateInventory();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('status').innerText = "Error detecting objects";
+        });
+}
+
+function updateInventory() {
+    console.log("Updating inventory...");
+    fetch('/inventory')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Inventory data:", data);
+            const inventoryList = document.getElementById('inventory');
+            inventoryList.innerHTML = '';
+            for (const [item, details] of Object.entries(data)) {
+                const li = document.createElement('li');
+                li.textContent = `${item}: ${details.quantity}`;
+                inventoryList.appendChild(li);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating inventory:', error);
+        });
+}
+
+        function clearInventory() {
+            fetch('/clear_inventory', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').innerText = data.message;
+                    updateInventory();
+                })
+                .catch(error => {
+                    console.error('Error clearing inventory:', error);
+                    document.getElementById('status').innerText = "Error clearing inventory";
+                });
+        }
+
+        // Call updateInventory immediately when the page loads
+        document.addEventListener('DOMContentLoaded', updateInventory);
+    </script>
+</body>
+</html>

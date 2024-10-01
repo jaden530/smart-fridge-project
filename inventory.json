@@ -1,0 +1,17 @@
+{
+  "truck": {
+    "quantity": 1,
+    "expiry_date": null,
+    "added_date": "2024-10-01T21:10:24.772980"
+  },
+  "bicycle": {
+    "quantity": 1,
+    "expiry_date": null,
+    "added_date": "2024-10-01T21:10:24.773337"
+  },
+  "dog": {
+    "quantity": 1,
+    "expiry_date": null,
+    "added_date": "2024-10-01T21:10:24.774352"
+  }
+}
