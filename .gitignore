@@ -1,7 +1,7 @@
 echo "venv/" >> .gitignore
-echo "model_data/yolov3.weights" >> .gitignore
-model_data/yolov3.weights
+
 venv/
 __pycache__/
 *.pyc
 captured_images/
+inventory.json

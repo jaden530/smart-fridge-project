@@ -4,46 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Fridge</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .inventory, .chart {
+            width: 48%;
+        }
         #capturedImage {
-        display: none;
-        max-width: 100%;
-        margin-top: 20px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
+            max-width: 100%;
+            margin-top: 20px;
+        }
+        #detectedObjects {
+            margin-top: 20px;
+            display: none;
+        }
+        .category {
+            margin-bottom: 20px;
+        }
+        button {
+            margin-right: 10px;
+        }
+        .expiring-soon {
+            color: red;
+            font-weight: bold;
+        }
+        .expiry-input {
+            margin-left: 10px;
+            font-size: 0.8em;
+        }
     </style>
-    
 </head>
 <body>
     <h1>Smart Fridge</h1>
     <button onclick="captureImage()">Capture Image</button>
     <button onclick="detectObjects()">Detect Objects</button>
     <button onclick="clearInventory()">Clear Inventory</button>
+    <button onclick="toggleDetailedInfo()">Toggle Detailed Info</button>
+    <button onclick="checkExpiringSoon()">Check Expiring Soon</button>
     <div id="status"></div>
-    <img id="capturedImage" style="display: none; max-width: 100%; margin-top: 20px;">
-    <h2>Inventory</h2>
-    <ul id="inventory"></ul>
+    <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
+    <div class="container">
+        <div class="inventory">
+            <h2>Inventory</h2>
+            <div id="inventory"></div>
+        </div>
+        <div class="chart">
+            <h2>Inventory Chart</h2>
+            <canvas id="inventoryBarChart"></canvas>
+        </div>
+    </div>
+    <div id="detectedObjects"></div>
+    <div id="expiringSoon"></div>
 
     <script>
+        let inventoryChart;
+
         function captureImage() {
     console.log("Capturing image...");
     fetch('/capture', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             console.log("Capture response:", data);
-            document.getElementById('status').innerText = data.message;
             if (data.image_path) {
                 const imgElement = document.getElementById('capturedImage');
                 imgElement.src = data.image_path + '?t=' + new Date().getTime();
                 imgElement.style.display = 'block';
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('status').innerText = "Error capturing image";
-        });
+        .catch(error => console.error('Error:', error));
 }
 
 function detectObjects() {
@@ -58,6 +95,8 @@ function detectObjects() {
                 imgElement.src = data.image_path + '?t=' + new Date().getTime();
                 imgElement.style.display = 'block';
             }
+            displayDetectedObjects(data.objects);
+            console.log("Calling updateInventory after detection");
             updateInventory();
         })
         .catch(error => {
@@ -66,22 +105,165 @@ function detectObjects() {
         });
 }
 
-function updateInventory() {
-    console.log("Updating inventory...");
-    fetch('/inventory')
-        .then(response => response.json())
+        function displayDetectedObjects(objects) {
+            const container = document.getElementById('detectedObjects');
+            container.innerHTML = '<h2>Detected Objects</h2>';
+            objects.forEach(obj => {
+                const div = document.createElement('div');
+                div.className = 'object-details';
+                div.innerHTML = `
+                    <p><strong>Class:</strong> ${obj.class}</p>
+                    <p><strong>Confidence:</strong> ${obj.confidence}</p>
+                    <p><strong>Position:</strong> (${obj.center.x}, ${obj.center.y})</p>
+                    <p><strong>Size:</strong> ${obj.box.width}x${obj.box.height}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateInventory() {
+            console.log("Updating inventory...");
+            fetch('/inventory')
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Inventory data:", data);
+                    const inventoryDiv = document.getElementById('inventory');
+                    inventoryDiv.innerHTML = '<h3>Inventory</h3>';
+                    if (Object.keys(data).length === 0) {
+                        inventoryDiv.innerHTML += '<p>No items in inventory</p>';
+                    } else {
+                        for (const [item, details] of Object.entries(data)) {
+                            const category = details.category || 'Uncategorized';
+                            let categoryDiv = document.getElementById(`category-${category}`);
+                            if (!categoryDiv) {
+                                categoryDiv = document.createElement('div');
+                                categoryDiv.id = `category-${category}`;
+                                categoryDiv.className = 'category';
+                                categoryDiv.innerHTML = `<h4>${category.charAt(0).toUpperCase() + category.slice(1)}</h4>`;
+                                inventoryDiv.appendChild(categoryDiv);
+                            }
+                            const itemDiv = document.createElement('div');
+                            const expiryDate = new Date(details.expiry_date);
+                            const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                            itemDiv.innerHTML = `
+                                <p>
+                                    ${item}: ${details.quantity}
+                                    <span class="${daysUntilExpiry <= 3 ? 'expiring-soon' : ''}">
+                                        (Expires in ${daysUntilExpiry} days)
+                                    </span>
+                                    <input type="date" class="expiry-input" value="${details.expiry_date.split('T')[0]}" 
+                                           onchange="updateExpiryDate('${item}', this.value)">
+                                </p>
+                            `;
+                            categoryDiv.appendChild(itemDiv);
+                        }
+                    }
+                    updateInventoryChart();
+                })
+                .catch(error => {
+                    console.error('Error updating inventory:', error);
+                    document.getElementById('inventory').innerHTML = '<p>Error loading inventory</p>';
+                });
+        }
+
+        function updateExpiryDate(item, newDate) {
+            fetch('/update-expiry', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ item_name: item, new_expiry: newDate }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+                updateInventory();
+            })
+            .catch(error => console.error('Error updating expiry date:', error));
+        }
+
+        function checkExpiringSoon() {
+            fetch('/expiring-soon')
+                .then(response => response.json())
+                .then(data => {
+                    const expiringSoonDiv = document.getElementById('expiringSoon');
+                    expiringSoonDiv.innerHTML = '<h3>Expiring Soon</h3>';
+                    if (data.length === 0) {
+                        expiringSoonDiv.innerHTML += '<p>No items expiring soon</p>';
+                    } else {
+                        const ul = document.createElement('ul');
+                        data.forEach(([item, details]) => {
+                            const li = document.createElement('li');
+                            li.textContent = `${item} expires on ${new Date(details.expiry_date).toLocaleDateString()}`;
+                            ul.appendChild(li);
+                        });
+                        expiringSoonDiv.appendChild(ul);
+                    }
+                })
+                .catch(error => console.error('Error checking expiring items:', error));
+        }
+        
+
+function updateInventoryChart() {
+    console.log("Updating inventory chart...");
+    fetch('/inventory_data')
+        .then(response => {
+            console.log("Inventory data response:", response);
+            return response.json();
+        })
         .then(data => {
-            console.log("Inventory data:", data);
-            const inventoryList = document.getElementById('inventory');
-            inventoryList.innerHTML = '';
-            for (const [item, details] of Object.entries(data)) {
-                const li = document.createElement('li');
-                li.textContent = `${item}: ${details.quantity}`;
-                inventoryList.appendChild(li);
+            console.log("Inventory chart data:", data);
+            const ctx = document.getElementById('inventoryBarChart').getContext('2d');
+            
+            if (!data || Object.keys(data).length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '20px Arial';
+                ctx.fillText('No data available', 10, 50);
+                return;
             }
+
+            const datasets = Object.entries(data).map(([category, categoryData], index) => ({
+                label: category,
+                data: categoryData.quantities,
+                backgroundColor: `hsl(${index * 60}, 70%, 60%)`,
+            }));
+
+            if (inventoryChart) {
+                inventoryChart.destroy();
+            }
+            inventoryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.values(data).flatMap(categoryData => categoryData.items),
+                    datasets: datasets
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stepSize: 1
+                        }
+                    },
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Current Inventory by Category'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
         })
         .catch(error => {
-            console.error('Error updating inventory:', error);
+            console.error('Error updating inventory chart:', error);
+            const ctx = document.getElementById('inventoryBarChart').getContext('2d');
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.font = '20px Arial';
+            ctx.fillText('Error loading chart data', 10, 50);
         });
 }
 
@@ -98,8 +280,15 @@ function updateInventory() {
                 });
         }
 
-        // Call updateInventory immediately when the page loads
-        document.addEventListener('DOMContentLoaded', updateInventory);
+        function toggleDetailedInfo() {
+            const detectedObjects = document.getElementById('detectedObjects');
+            detectedObjects.style.display = detectedObjects.style.display === 'none' ? 'block' : 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateInventory();
+            checkExpiringSoon();
+        });
     </script>
 </body>
 </html>

@@ -1,17 +1,30 @@
 {
-  "truck": {
+  "banana": {
     "quantity": 1,
-    "expiry_date": null,
-    "added_date": "2024-10-01T21:10:24.772980"
+    "expiry_date": "2024-10-03",
+    "added_date": "2024-10-02T17:02:59.865123",
+    "last_detected": "2024-10-02T17:02:59.865124",
+    "category": "other"
   },
-  "bicycle": {
-    "quantity": 1,
-    "expiry_date": null,
-    "added_date": "2024-10-01T21:10:24.773337"
+  "bowl": {
+    "quantity": 4,
+    "expiry_date": "2024-10-09T17:02:59.865444",
+    "added_date": "2024-10-02T17:02:59.865454",
+    "last_detected": "2024-10-02T17:02:59.867331",
+    "category": "other"
   },
-  "dog": {
+  "carrot": {
     "quantity": 1,
-    "expiry_date": null,
-    "added_date": "2024-10-01T21:10:24.774352"
+    "expiry_date": "2024-10-09T17:02:59.865796",
+    "added_date": "2024-10-02T17:02:59.865805",
+    "last_detected": "2024-10-02T17:02:59.865806",
+    "category": "other"
+  },
+  "orange": {
+    "quantity": 1,
+    "expiry_date": "2024-10-09T17:02:59.866410",
+    "added_date": "2024-10-02T17:02:59.866419",
+    "last_detected": "2024-10-02T17:02:59.866420",
+    "category": "other"
   }
 }
