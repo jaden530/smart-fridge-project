@@ -9,6 +9,7 @@
    - Add your Spoonacular API key: `SPOONACULAR_API_KEY=your_key_here`
    - Add your database URL: `DATABASE_URL=your_database_url_here`
    - Add a secret key: `SECRET_KEY=your_secret_key_here`
+   - Add your OpenAI Key: `OPENAI_API_KEY=your_key_here`
 
    Alternatively, you can set these as environment variables in your system.
 
