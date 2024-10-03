@@ -1,30 +1,90 @@
 {
   "banana": {
     "quantity": 1,
-    "expiry_date": "2024-10-03",
-    "added_date": "2024-10-02T17:02:59.865123",
-    "last_detected": "2024-10-02T17:02:59.865124",
-    "category": "other"
+    "expiry_date": "2024-10-07T23:33:18.957623",
+    "added_date": "2024-10-02T23:33:18.957641",
+    "last_detected": "2024-10-02T23:33:18.957642",
+    "category": "fruits"
   },
   "bowl": {
     "quantity": 4,
-    "expiry_date": "2024-10-09T17:02:59.865444",
-    "added_date": "2024-10-02T17:02:59.865454",
-    "last_detected": "2024-10-02T17:02:59.867331",
-    "category": "other"
+    "expiry_date": "2024-10-09T23:33:18.958003",
+    "added_date": "2024-10-02T23:33:18.958017",
+    "last_detected": "2024-10-02T23:33:18.960456",
+    "category": "non_food"
   },
   "carrot": {
     "quantity": 1,
-    "expiry_date": "2024-10-09T17:02:59.865796",
-    "added_date": "2024-10-02T17:02:59.865805",
-    "last_detected": "2024-10-02T17:02:59.865806",
-    "category": "other"
+    "expiry_date": "2024-10-09T23:33:18.959149",
+    "added_date": "2024-10-02T23:33:18.959159",
+    "last_detected": "2024-10-02T23:33:18.959161",
+    "category": "vegetables"
   },
   "orange": {
     "quantity": 1,
-    "expiry_date": "2024-10-09T17:02:59.866410",
-    "added_date": "2024-10-02T17:02:59.866419",
-    "last_detected": "2024-10-02T17:02:59.866420",
-    "category": "other"
+    "expiry_date": "2024-10-09T23:33:18.959893",
+    "added_date": "2024-10-02T23:33:18.959902",
+    "last_detected": "2024-10-02T23:33:18.959904",
+    "category": "fruits"
+  },
+  "user1": {
+    "banana": {
+      "quantity": 1,
+      "expiry_date": "2024-10-08T12:36:02.151875",
+      "added_date": "2024-10-03T12:36:02.151892",
+      "last_detected": "2024-10-03T12:36:02.151894",
+      "category": "fruits"
+    },
+    "bowl": {
+      "quantity": 4,
+      "expiry_date": "2024-10-10T12:36:02.152294",
+      "added_date": "2024-10-03T12:36:02.152303",
+      "last_detected": "2024-10-03T12:36:02.153941",
+      "category": "non_food"
+    },
+    "carrot": {
+      "quantity": 1,
+      "expiry_date": "2024-10-10T12:36:02.152846",
+      "added_date": "2024-10-03T12:36:02.152855",
+      "last_detected": "2024-10-03T12:36:02.152857",
+      "category": "vegetables"
+    },
+    "orange": {
+      "quantity": 1,
+      "expiry_date": "2024-10-10T12:36:02.153382",
+      "added_date": "2024-10-03T12:36:02.153392",
+      "last_detected": "2024-10-03T12:36:02.153394",
+      "category": "fruits"
+    }
+  },
+  "1": {
+    "banana": {
+      "quantity": 7,
+      "expiry_date": "2024-10-08T15:40:14.763283",
+      "added_date": "2024-10-03T15:40:14.763298",
+      "last_detected": "2024-10-03T16:42:33.955327",
+      "category": "fruits"
+    },
+    "bowl": {
+      "quantity": 28,
+      "expiry_date": "2024-10-10T15:40:14.763732",
+      "added_date": "2024-10-03T15:40:14.763740",
+      "last_detected": "2024-10-03T16:42:33.955349",
+      "category": "non_food"
+    },
+    "carrot": {
+      "quantity": 7,
+      "expiry_date": "2024-10-10T15:40:14.764234",
+      "added_date": "2024-10-03T15:40:14.764241",
+      "last_detected": "2024-10-03T16:42:33.955342",
+      "category": "vegetables"
+    },
+    "orange": {
+      "quantity": 7,
+      "expiry_date": "2024-10-10T15:40:14.765085",
+      "added_date": "2024-10-03T15:40:14.765092",
+      "last_detected": "2024-10-03T16:42:33.955346",
+      "category": "fruits"
+    }
   }
 }

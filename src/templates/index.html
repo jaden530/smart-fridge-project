@@ -44,12 +44,15 @@
     </style>
 </head>
 <body>
+    <h1>Welcome, {{ username }}!</h1>
+    <button onclick="location.href='/logout'">Logout</button>
     <h1>Smart Fridge</h1>
     <button onclick="captureImage()">Capture Image</button>
     <button onclick="detectObjects()">Detect Objects</button>
     <button onclick="clearInventory()">Clear Inventory</button>
     <button onclick="toggleDetailedInfo()">Toggle Detailed Info</button>
     <button onclick="checkExpiringSoon()">Check Expiring Soon</button>
+    <div id="notifications"></div>
     <div id="status"></div>
     <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
     <div class="container">
@@ -61,6 +64,10 @@
             <h2>Inventory Chart</h2>
             <canvas id="inventoryBarChart"></canvas>
         </div>
+        <div id="recipeSuggestions">
+            <h2>Recipe Suggestions</h2>
+            <button onclick="getSuggestedRecipes()">Get Recipe Suggestions</button>
+            <div id="recipeList"></div>
     </div>
     <div id="detectedObjects"></div>
     <div id="expiringSoon"></div>
@@ -122,49 +129,80 @@ function detectObjects() {
         }
 
         function updateInventory() {
-            console.log("Updating inventory...");
-            fetch('/inventory')
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Inventory data:", data);
-                    const inventoryDiv = document.getElementById('inventory');
-                    inventoryDiv.innerHTML = '<h3>Inventory</h3>';
-                    if (Object.keys(data).length === 0) {
-                        inventoryDiv.innerHTML += '<p>No items in inventory</p>';
-                    } else {
-                        for (const [item, details] of Object.entries(data)) {
-                            const category = details.category || 'Uncategorized';
-                            let categoryDiv = document.getElementById(`category-${category}`);
-                            if (!categoryDiv) {
-                                categoryDiv = document.createElement('div');
-                                categoryDiv.id = `category-${category}`;
-                                categoryDiv.className = 'category';
-                                categoryDiv.innerHTML = `<h4>${category.charAt(0).toUpperCase() + category.slice(1)}</h4>`;
-                                inventoryDiv.appendChild(categoryDiv);
-                            }
-                            const itemDiv = document.createElement('div');
-                            const expiryDate = new Date(details.expiry_date);
-                            const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                            itemDiv.innerHTML = `
-                                <p>
-                                    ${item}: ${details.quantity}
-                                    <span class="${daysUntilExpiry <= 3 ? 'expiring-soon' : ''}">
-                                        (Expires in ${daysUntilExpiry} days)
-                                    </span>
-                                    <input type="date" class="expiry-input" value="${details.expiry_date.split('T')[0]}" 
-                                           onchange="updateExpiryDate('${item}', this.value)">
-                                </p>
-                            `;
-                            categoryDiv.appendChild(itemDiv);
+        console.log("Updating inventory...");
+        fetch('/inventory')
+            .then(response => response.json())
+            .then(data => {
+                console.log("Inventory data:", data);
+                const inventoryDiv = document.getElementById('inventory');
+                inventoryDiv.innerHTML = '<h3>Inventory</h3>';
+                if (Object.keys(data).length === 0) {
+                    inventoryDiv.innerHTML += '<p>No items in inventory</p>';
+                } else {
+                    const categories = ['fruits', 'vegetables', 'dairy', 'grains', 'protein', 'beverages', 'condiments', 'snacks', 'other'];
+                    categories.forEach(category => {
+                        let categoryItems = Object.entries(data).filter(([_, details]) => details.category === category);
+                        if (categoryItems.length > 0) {
+                            let categoryDiv = document.createElement('div');
+                            categoryDiv.className = 'category';
+                            categoryDiv.innerHTML = `<h4>${category.charAt(0).toUpperCase() + category.slice(1)}</h4>`;
+                            categoryItems.forEach(([item, details]) => {
+                                const itemDiv = document.createElement('div');
+                                const expiryDate = new Date(details.expiry_date);
+                                const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                                itemDiv.innerHTML = `
+                                    <p>
+                                        ${item}: ${details.quantity}
+                                        <span class="${daysUntilExpiry <= 3 ? 'expiring-soon' : ''}">
+                                            (Expires in ${daysUntilExpiry} days)
+                                        </span>
+                                        <input type="date" class="expiry-input" value="${details.expiry_date.split('T')[0]}" 
+                                               onchange="updateExpiryDate('${item}', this.value)">
+                                    </p>
+                                `;
+                                categoryDiv.appendChild(itemDiv);
+                            });
+                            inventoryDiv.appendChild(categoryDiv);
                         }
-                    }
-                    updateInventoryChart();
-                })
-                .catch(error => {
-                    console.error('Error updating inventory:', error);
-                    document.getElementById('inventory').innerHTML = '<p>Error loading inventory</p>';
+                    });
+                }
+                updateInventoryChart();
+            })
+            .catch(error => {
+                console.error('Error updating inventory:', error);
+                document.getElementById('inventory').innerHTML = '<p>Error loading inventory</p>';
+            });
+    }
+
+    function getSuggestedRecipes() {
+    fetch('/suggest_recipes')
+        .then(response => response.json())
+        .then(data => {
+            const recipeList = document.getElementById('recipeList');
+            recipeList.innerHTML = '';
+            if (data.message) {
+                // This is an error message
+                recipeList.innerHTML = `<p>${data.message}</p>`;
+            } else if (data.length === 0) {
+                recipeList.innerHTML = '<p>No recipes found with current ingredients.</p>';
+            } else {
+                data.forEach(recipe => {
+                    const recipeDiv = document.createElement('div');
+                    recipeDiv.innerHTML = `
+                        <h3>${recipe.title}</h3>
+                        <p><strong>Used Ingredients:</strong> ${recipe.usedIngredients ? recipe.usedIngredients.map(ing => ing.name).join(', ') : 'N/A'}</p>
+                        <p><strong>Missing Ingredients:</strong> ${recipe.missedIngredients ? recipe.missedIngredients.map(ing => ing.name).join(', ') : 'N/A'}</p>
+                        ${recipe.instructions ? `<p><strong>Instructions:</strong> ${recipe.instructions}</p>` : ''}
+                    `;
+                    recipeList.appendChild(recipeDiv);
                 });
-        }
+            }
+        })
+        .catch(error => {
+            console.error('Error getting recipe suggestions:', error);
+            document.getElementById('recipeList').innerHTML = '<p>Error loading recipe suggestions. Please try again later.</p>';
+        });
+}
 
         function updateExpiryDate(item, newDate) {
             fetch('/update-expiry', {
@@ -204,13 +242,13 @@ function detectObjects() {
         }
         
 
-function updateInventoryChart() {
+
+        
+
+        function updateInventoryChart() {
     console.log("Updating inventory chart...");
     fetch('/inventory_data')
-        .then(response => {
-            console.log("Inventory data response:", response);
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             console.log("Inventory chart data:", data);
             const ctx = document.getElementById('inventoryBarChart').getContext('2d');
@@ -218,14 +256,23 @@ function updateInventoryChart() {
             if (!data || Object.keys(data).length === 0) {
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                 ctx.font = '20px Arial';
-                ctx.fillText('No data available', 10, 50);
+                ctx.fillText('No food items in inventory', 10, 50);
                 return;
             }
 
-            const datasets = Object.entries(data).map(([category, categoryData], index) => ({
+            const categoryColors = {
+                'fruits': 'rgba(255, 99, 132, 0.8)',
+                'vegetables': 'rgba(75, 192, 192, 0.8)',
+                'dairy': 'rgba(54, 162, 235, 0.8)',
+                'grains': 'rgba(255, 206, 86, 0.8)',
+                'protein': 'rgba(153, 102, 255, 0.8)',
+                'beverages': 'rgba(255, 159, 64, 0.8)'
+            };
+
+            const datasets = Object.entries(data).map(([category, categoryData]) => ({
                 label: category,
                 data: categoryData.quantities,
-                backgroundColor: `hsl(${index * 60}, 70%, 60%)`,
+                backgroundColor: categoryColors[category] || `hsl(${Math.random() * 360}, 70%, 60%)`,
             }));
 
             if (inventoryChart) {
@@ -280,15 +327,62 @@ function updateInventoryChart() {
                 });
         }
 
+        function checkNotifications() {
+            Promise.all([
+                fetch('/expiring-soon').then(res => res.json()),
+                fetch('/inventory').then(res => res.json())
+            ])
+            .then(([expiringItems, inventory]) => {
+                const notificationsDiv = document.getElementById('notifications');
+                notificationsDiv.innerHTML = '<h3>Notifications</h3>';
+                
+                if (expiringItems.length > 0) {
+                    const ul = document.createElement('ul');
+                    expiringItems.forEach(([item, details]) => {
+                        const li = document.createElement('li');
+                        li.textContent = `${item} expires on ${new Date(details.expiry_date).toLocaleDateString()}`;
+                        ul.appendChild(li);
+                    });
+                    notificationsDiv.appendChild(ul);
+                }
+
+                const lowStockItems = Object.entries(inventory).filter(([_, details]) => details.quantity <= 1);
+                if (lowStockItems.length > 0) {
+                    const p = document.createElement('p');
+                    p.textContent = "Low stock items: " + lowStockItems.map(([item, _]) => item).join(", ");
+                    notificationsDiv.appendChild(p);
+                }
+
+                if (expiringItems.length === 0 && lowStockItems.length === 0) {
+                    notificationsDiv.innerHTML += '<p>No new notifications</p>';
+                }
+            })
+            .catch(error => console.error('Error checking notifications:', error));
+        }
+
         function toggleDetailedInfo() {
             const detectedObjects = document.getElementById('detectedObjects');
             detectedObjects.style.display = detectedObjects.style.display === 'none' ? 'block' : 'none';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+    updateInventory();
+    checkExpiringSoon();
+    getSuggestedRecipes();
+
+
+    document.addEventListener('DOMContentLoaded', () => {
             updateInventory();
-            checkExpiringSoon();
+            checkNotifications();
+            getSuggestedRecipes();
+            setInterval(checkNotifications, 300000); // Check every 5 minutes
         });
+
+
+
+
+    
+});
     </script>
 </body>
 </html>

@@ -1,25 +1,26 @@
+from __future__ import annotations
+
 import code
 import sys
 import typing as t
-from html import escape
+from contextvars import ContextVar
 from types import CodeType
 
-from ..local import Local
+from markupsafe import escape
+
 from .repr import debug_repr
 from .repr import dump
 from .repr import helper
 
-if t.TYPE_CHECKING:
-    import codeop  # noqa: F401
-
-_local = Local()
+_stream: ContextVar[HTMLStringO] = ContextVar("werkzeug.debug.console.stream")
+_ipy: ContextVar[_InteractiveConsole] = ContextVar("werkzeug.debug.console.ipy")
 
 
 class HTMLStringO:
     """A StringO version that HTML escapes on write."""
 
     def __init__(self) -> None:
-        self._buffer: t.List[str] = []
+        self._buffer: list[str] = []
 
     def isatty(self) -> bool:
         return False
@@ -46,8 +47,6 @@ class HTMLStringO:
         return val
 
     def _write(self, x: str) -> None:
-        if isinstance(x, bytes):
-            x = x.decode("utf-8", "replace")
         self._buffer.append(x)
 
     def write(self, x: str) -> None:
@@ -64,39 +63,43 @@ class ThreadedStream:
     def push() -> None:
         if not isinstance(sys.stdout, ThreadedStream):
             sys.stdout = t.cast(t.TextIO, ThreadedStream())
-        _local.stream = HTMLStringO()
+
+        _stream.set(HTMLStringO())
 
     @staticmethod
     def fetch() -> str:
         try:
-            stream = _local.stream
-        except AttributeError:
+            stream = _stream.get()
+        except LookupError:
             return ""
-        return stream.reset()  # type: ignore
+
+        return stream.reset()
 
     @staticmethod
     def displayhook(obj: object) -> None:
         try:
-            stream = _local.stream
-        except AttributeError:
+            stream = _stream.get()
+        except LookupError:
             return _displayhook(obj)  # type: ignore
+
         # stream._write bypasses escaping as debug_repr is
         # already generating HTML for us.
         if obj is not None:
-            _local._current_ipy.locals["_"] = obj
+            _ipy.get().locals["_"] = obj
             stream._write(debug_repr(obj))
 
     def __setattr__(self, name: str, value: t.Any) -> None:
         raise AttributeError(f"read only attribute {name}")
 
-    def __dir__(self) -> t.List[str]:
+    def __dir__(self) -> list[str]:
         return dir(sys.__stdout__)
 
     def __getattribute__(self, name: str) -> t.Any:
         try:
-            stream = _local.stream
-        except AttributeError:
-            stream = sys.__stdout__
+            stream = _stream.get()
+        except LookupError:
+            stream = sys.__stdout__  # type: ignore[assignment]
+
         return getattr(stream, name)
 
     def __repr__(self) -> str:
@@ -110,7 +113,7 @@ sys.displayhook = ThreadedStream.displayhook
 
 class _ConsoleLoader:
     def __init__(self) -> None:
-        self._storage: t.Dict[int, str] = {}
+        self._storage: dict[int, str] = {}
 
     def register(self, code: CodeType, source: str) -> None:
         self._storage[id(code)] = source
@@ -119,7 +122,7 @@ class _ConsoleLoader:
             if isinstance(var, CodeType):
                 self._storage[id(var)] = source
 
-    def get_source_by_code(self, code: CodeType) -> t.Optional[str]:
+    def get_source_by_code(self, code: CodeType) -> str | None:
         try:
             return self._storage[id(code)]
         except KeyError:
@@ -127,9 +130,9 @@ class _ConsoleLoader:
 
 
 class _InteractiveConsole(code.InteractiveInterpreter):
-    locals: t.Dict[str, t.Any]
+    locals: dict[str, t.Any]
 
-    def __init__(self, globals: t.Dict[str, t.Any], locals: t.Dict[str, t.Any]) -> None:
+    def __init__(self, globals: dict[str, t.Any], locals: dict[str, t.Any]) -> None:
         self.loader = _ConsoleLoader()
         locals = {
             **globals,
@@ -141,14 +144,17 @@ class _InteractiveConsole(code.InteractiveInterpreter):
         super().__init__(locals)
         original_compile = self.compile
 
-        def compile(source: str, filename: str, symbol: str) -> CodeType:
+        def compile(source: str, filename: str, symbol: str) -> CodeType | None:
             code = original_compile(source, filename, symbol)
-            self.loader.register(code, source)
+
+            if code is not None:
+                self.loader.register(code, source)
+
             return code
 
-        self.compile = compile
+        self.compile = compile  # type: ignore[assignment]
         self.more = False
-        self.buffer: t.List[str] = []
+        self.buffer: list[str] = []
 
     def runsource(self, source: str, **kwargs: t.Any) -> str:  # type: ignore
         source = f"{source.rstrip()}\n"
@@ -164,7 +170,7 @@ class _InteractiveConsole(code.InteractiveInterpreter):
                 del self.buffer[:]
         finally:
             output = ThreadedStream.fetch()
-        return prompt + escape(source) + output
+        return f"{prompt}{escape(source)}{output}"
 
     def runcode(self, code: CodeType) -> None:
         try:
@@ -173,16 +179,18 @@ class _InteractiveConsole(code.InteractiveInterpreter):
             self.showtraceback()
 
     def showtraceback(self) -> None:
-        from .tbtools import get_current_traceback
+        from .tbtools import DebugTraceback
 
-        tb = get_current_traceback(skip=1)
-        sys.stdout._write(tb.render_summary())  # type: ignore
+        exc = t.cast(BaseException, sys.exc_info()[1])
+        te = DebugTraceback(exc, skip=1)
+        sys.stdout._write(te.render_traceback_html())  # type: ignore
 
-    def showsyntaxerror(self, filename: t.Optional[str] = None) -> None:
-        from .tbtools import get_current_traceback
+    def showsyntaxerror(self, filename: str | None = None) -> None:
+        from .tbtools import DebugTraceback
 
-        tb = get_current_traceback(skip=4)
-        sys.stdout._write(tb.render_summary())  # type: ignore
+        exc = t.cast(BaseException, sys.exc_info()[1])
+        te = DebugTraceback(exc, skip=4)
+        sys.stdout._write(te.render_traceback_html())  # type: ignore
 
     def write(self, data: str) -> None:
         sys.stdout.write(data)
@@ -193,8 +201,8 @@ class Console:
 
     def __init__(
         self,
-        globals: t.Optional[t.Dict[str, t.Any]] = None,
-        locals: t.Optional[t.Dict[str, t.Any]] = None,
+        globals: dict[str, t.Any] | None = None,
+        locals: dict[str, t.Any] | None = None,
     ) -> None:
         if locals is None:
             locals = {}
@@ -203,7 +211,7 @@ class Console:
         self._ipy = _InteractiveConsole(globals, locals)
 
     def eval(self, code: str) -> str:
-        _local._current_ipy = self._ipy
+        _ipy.set(self._ipy)
         old_sys_stdout = sys.stdout
         try:
             return self._ipy.runsource(code)
