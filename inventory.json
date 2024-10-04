@@ -57,5 +57,1587 @@
       "category": "fruits"
     }
   },
-  "1": {}
+  "1": {
+    "banana": {
+      "quantity": 1,
+      "expiry_date": "2024-10-04",
+      "added_date": "2024-10-04T00:47:37.327136",
+      "last_detected": "2024-10-04T00:47:37.327140",
+      "category": "fruits",
+      "portion_size": "large",
+      "nutritional_info": {
+        "food_name": "banana",
+        "brand_name": null,
+        "serving_qty": 1,
+        "serving_unit": "large",
+        "serving_weight_grams": 136,
+        "nf_calories": 121.04,
+        "nf_total_fat": 0.45,
+        "nf_saturated_fat": 0.15,
+        "nf_cholesterol": 0,
+        "nf_sodium": 1.36,
+        "nf_total_carbohydrate": 31.06,
+        "nf_dietary_fiber": 3.54,
+        "nf_sugars": 16.63,
+        "nf_protein": 1.48,
+        "nf_potassium": 486.88,
+        "nf_p": 29.92,
+        "full_nutrients": [
+          {
+            "attr_id": 203,
+            "value": 1.4824
+          },
+          {
+            "attr_id": 204,
+            "value": 0.4488
+          },
+          {
+            "attr_id": 205,
+            "value": 31.0624
+          },
+          {
+            "attr_id": 207,
+            "value": 1.1152
+          },
+          {
+            "attr_id": 208,
+            "value": 121.04
+          },
+          {
+            "attr_id": 209,
+            "value": 7.3168
+          },
+          {
+            "attr_id": 210,
+            "value": 3.2504
+          },
+          {
+            "attr_id": 211,
+            "value": 6.7728
+          },
+          {
+            "attr_id": 212,
+            "value": 6.596
+          },
+          {
+            "attr_id": 213,
+            "value": 0
+          },
+          {
+            "attr_id": 214,
+            "value": 0.0136
+          },
+          {
+            "attr_id": 221,
+            "value": 0
+          },
+          {
+            "attr_id": 255,
+            "value": 101.8776
+          },
+          {
+            "attr_id": 262,
+            "value": 0
+          },
+          {
+            "attr_id": 263,
+            "value": 0
+          },
+          {
+            "attr_id": 268,
+            "value": 504.56
+          },
+          {
+            "attr_id": 269,
+            "value": 16.6328
+          },
+          {
+            "attr_id": 287,
+            "value": 0
+          },
+          {
+            "attr_id": 291,
+            "value": 3.536
+          },
+          {
+            "attr_id": 301,
+            "value": 6.8
+          },
+          {
+            "attr_id": 303,
+            "value": 0.3536
+          },
+          {
+            "attr_id": 304,
+            "value": 36.72
+          },
+          {
+            "attr_id": 305,
+            "value": 29.92
+          },
+          {
+            "attr_id": 306,
+            "value": 486.88
+          },
+          {
+            "attr_id": 307,
+            "value": 1.36
+          },
+          {
+            "attr_id": 309,
+            "value": 0.204
+          },
+          {
+            "attr_id": 312,
+            "value": 0.1061
+          },
+          {
+            "attr_id": 313,
+            "value": 2.992
+          },
+          {
+            "attr_id": 315,
+            "value": 0.3672
+          },
+          {
+            "attr_id": 317,
+            "value": 1.36
+          },
+          {
+            "attr_id": 318,
+            "value": 87.04
+          },
+          {
+            "attr_id": 319,
+            "value": 0
+          },
+          {
+            "attr_id": 320,
+            "value": 4.08
+          },
+          {
+            "attr_id": 321,
+            "value": 35.36
+          },
+          {
+            "attr_id": 322,
+            "value": 34
+          },
+          {
+            "attr_id": 323,
+            "value": 0.136
+          },
+          {
+            "attr_id": 324,
+            "value": 0
+          },
+          {
+            "attr_id": 328,
+            "value": 0
+          },
+          {
+            "attr_id": 334,
+            "value": 0
+          },
+          {
+            "attr_id": 337,
+            "value": 0
+          },
+          {
+            "attr_id": 338,
+            "value": 29.92
+          },
+          {
+            "attr_id": 341,
+            "value": 0
+          },
+          {
+            "attr_id": 342,
+            "value": 0.0272
+          },
+          {
+            "attr_id": 343,
+            "value": 0.0136
+          },
+          {
+            "attr_id": 344,
+            "value": 0.0816
+          },
+          {
+            "attr_id": 345,
+            "value": 0
+          },
+          {
+            "attr_id": 346,
+            "value": 0
+          },
+          {
+            "attr_id": 347,
+            "value": 0
+          },
+          {
+            "attr_id": 401,
+            "value": 11.832
+          },
+          {
+            "attr_id": 404,
+            "value": 0.0422
+          },
+          {
+            "attr_id": 405,
+            "value": 0.0993
+          },
+          {
+            "attr_id": 406,
+            "value": 0.9044
+          },
+          {
+            "attr_id": 410,
+            "value": 0.4542
+          },
+          {
+            "attr_id": 415,
+            "value": 0.4991
+          },
+          {
+            "attr_id": 417,
+            "value": 27.2
+          },
+          {
+            "attr_id": 418,
+            "value": 0
+          },
+          {
+            "attr_id": 421,
+            "value": 13.328
+          },
+          {
+            "attr_id": 429,
+            "value": 0
+          },
+          {
+            "attr_id": 430,
+            "value": 0.68
+          },
+          {
+            "attr_id": 431,
+            "value": 0
+          },
+          {
+            "attr_id": 432,
+            "value": 27.2
+          },
+          {
+            "attr_id": 435,
+            "value": 27.2
+          },
+          {
+            "attr_id": 454,
+            "value": 0.136
+          },
+          {
+            "attr_id": 501,
+            "value": 0.0122
+          },
+          {
+            "attr_id": 502,
+            "value": 0.0381
+          },
+          {
+            "attr_id": 503,
+            "value": 0.0381
+          },
+          {
+            "attr_id": 504,
+            "value": 0.0925
+          },
+          {
+            "attr_id": 505,
+            "value": 0.068
+          },
+          {
+            "attr_id": 506,
+            "value": 0.0109
+          },
+          {
+            "attr_id": 507,
+            "value": 0.0122
+          },
+          {
+            "attr_id": 508,
+            "value": 0.0666
+          },
+          {
+            "attr_id": 509,
+            "value": 0.0122
+          },
+          {
+            "attr_id": 510,
+            "value": 0.0639
+          },
+          {
+            "attr_id": 511,
+            "value": 0.0666
+          },
+          {
+            "attr_id": 512,
+            "value": 0.1047
+          },
+          {
+            "attr_id": 513,
+            "value": 0.0544
+          },
+          {
+            "attr_id": 514,
+            "value": 0.1686
+          },
+          {
+            "attr_id": 515,
+            "value": 0.2067
+          },
+          {
+            "attr_id": 516,
+            "value": 0.0517
+          },
+          {
+            "attr_id": 517,
+            "value": 0.0381
+          },
+          {
+            "attr_id": 518,
+            "value": 0.0544
+          },
+          {
+            "attr_id": 601,
+            "value": 0
+          },
+          {
+            "attr_id": 605,
+            "value": 0
+          },
+          {
+            "attr_id": 606,
+            "value": 0.1523
+          },
+          {
+            "attr_id": 607,
+            "value": 0
+          },
+          {
+            "attr_id": 608,
+            "value": 0
+          },
+          {
+            "attr_id": 609,
+            "value": 0
+          },
+          {
+            "attr_id": 610,
+            "value": 0.0014
+          },
+          {
+            "attr_id": 611,
+            "value": 0.0027
+          },
+          {
+            "attr_id": 612,
+            "value": 0.0027
+          },
+          {
+            "attr_id": 613,
+            "value": 0.1387
+          },
+          {
+            "attr_id": 614,
+            "value": 0.0068
+          },
+          {
+            "attr_id": 617,
+            "value": 0.0299
+          },
+          {
+            "attr_id": 618,
+            "value": 0.0626
+          },
+          {
+            "attr_id": 619,
+            "value": 0.0367
+          },
+          {
+            "attr_id": 620,
+            "value": 0
+          },
+          {
+            "attr_id": 621,
+            "value": 0
+          },
+          {
+            "attr_id": 626,
+            "value": 0.0136
+          },
+          {
+            "attr_id": 627,
+            "value": 0
+          },
+          {
+            "attr_id": 628,
+            "value": 0
+          },
+          {
+            "attr_id": 629,
+            "value": 0
+          },
+          {
+            "attr_id": 630,
+            "value": 0
+          },
+          {
+            "attr_id": 631,
+            "value": 0
+          },
+          {
+            "attr_id": 636,
+            "value": 21.76
+          },
+          {
+            "attr_id": 645,
+            "value": 0.0435
+          },
+          {
+            "attr_id": 646,
+            "value": 0.0993
+          }
+        ],
+        "nix_brand_name": null,
+        "nix_brand_id": null,
+        "nix_item_name": null,
+        "nix_item_id": null,
+        "upc": null,
+        "consumed_at": "2024-10-04T00:47:35+00:00",
+        "metadata": {
+          "is_raw_food": false
+        },
+        "source": 1,
+        "ndb_no": 9040,
+        "tags": {
+          "item": "banana",
+          "measure": "large",
+          "quantity": null,
+          "food_group": 3,
+          "tag_id": 399
+        },
+        "alt_measures": [
+          {
+            "serving_weight": 126,
+            "measure": "NLEA serving",
+            "seq": 8,
+            "qty": 1
+          },
+          {
+            "serving_weight": 152,
+            "measure": "extra large (9\" or longer)",
+            "seq": 7,
+            "qty": 1
+          },
+          {
+            "serving_weight": 136,
+            "measure": "large (8\" to 8-7/8\" long)",
+            "seq": 6,
+            "qty": 1
+          },
+          {
+            "serving_weight": 118,
+            "measure": "medium (7\" to 7-7/8\" long)",
+            "seq": 5,
+            "qty": 1
+          },
+          {
+            "serving_weight": 101,
+            "measure": "small (6\" to 6-7/8\" long)",
+            "seq": 4,
+            "qty": 1
+          },
+          {
+            "serving_weight": 81,
+            "measure": "extra small (less than 6\" long)",
+            "seq": 3,
+            "qty": 1
+          },
+          {
+            "serving_weight": 150,
+            "measure": "cup, sliced",
+            "seq": 2,
+            "qty": 1
+          },
+          {
+            "serving_weight": 225,
+            "measure": "cup, mashed",
+            "seq": 1,
+            "qty": 1
+          },
+          {
+            "serving_weight": 28.35,
+            "measure": "oz",
+            "seq": 80,
+            "qty": 1
+          },
+          {
+            "serving_weight": 100,
+            "measure": "g",
+            "seq": null,
+            "qty": 100
+          }
+        ],
+        "lat": null,
+        "lng": null,
+        "meal_type": 5,
+        "photo": {
+          "thumb": "https://nix-tag-images.s3.amazonaws.com/399_thumb.jpg",
+          "highres": "https://nix-tag-images.s3.amazonaws.com/399_highres.jpg",
+          "is_user_uploaded": false
+        },
+        "sub_recipe": null,
+        "class_code": null,
+        "brick_code": null,
+        "tag_id": null
+      }
+    },
+    "bowl": {
+      "quantity": 4,
+      "expiry_date": "2024-10-11T00:47:37.629314",
+      "added_date": "2024-10-04T00:47:37.629333",
+      "last_detected": "2024-10-04T00:47:37.643441",
+      "category": "non_food",
+      "portion_size": "large",
+      "nutritional_info": null
+    },
+    "carrot": {
+      "quantity": 1,
+      "expiry_date": "2024-10-11T00:47:37.631658",
+      "added_date": "2024-10-04T00:47:37.631669",
+      "last_detected": "2024-10-04T00:47:37.631672",
+      "category": "vegetables",
+      "portion_size": "large",
+      "nutritional_info": {
+        "food_name": "carrot",
+        "brand_name": null,
+        "serving_qty": 1,
+        "serving_unit": "carrot",
+        "serving_weight_grams": 46,
+        "nf_calories": 16.1,
+        "nf_total_fat": 0.08,
+        "nf_saturated_fat": 0.01,
+        "nf_cholesterol": 0,
+        "nf_sodium": 26.68,
+        "nf_total_carbohydrate": 3.78,
+        "nf_dietary_fiber": 1.38,
+        "nf_sugars": 1.59,
+        "nf_protein": 0.35,
+        "nf_potassium": 108.1,
+        "nf_p": 13.8,
+        "full_nutrients": [
+          {
+            "attr_id": 203,
+            "value": 0.3496
+          },
+          {
+            "attr_id": 204,
+            "value": 0.0828
+          },
+          {
+            "attr_id": 205,
+            "value": 3.7812
+          },
+          {
+            "attr_id": 207,
+            "value": 0.3082
+          },
+          {
+            "attr_id": 208,
+            "value": 16.1
+          },
+          {
+            "attr_id": 209,
+            "value": 0.0782
+          },
+          {
+            "attr_id": 210,
+            "value": 1.242
+          },
+          {
+            "attr_id": 211,
+            "value": 0.184
+          },
+          {
+            "attr_id": 212,
+            "value": 0.1656
+          },
+          {
+            "attr_id": 213,
+            "value": 0
+          },
+          {
+            "attr_id": 214,
+            "value": 0
+          },
+          {
+            "attr_id": 221,
+            "value": 0
+          },
+          {
+            "attr_id": 255,
+            "value": 41.4782
+          },
+          {
+            "attr_id": 262,
+            "value": 0
+          },
+          {
+            "attr_id": 263,
+            "value": 0
+          },
+          {
+            "attr_id": 268,
+            "value": 67.62
+          },
+          {
+            "attr_id": 269,
+            "value": 1.587
+          },
+          {
+            "attr_id": 287,
+            "value": 0
+          },
+          {
+            "attr_id": 291,
+            "value": 1.38
+          },
+          {
+            "attr_id": 301,
+            "value": 13.8
+          },
+          {
+            "attr_id": 303,
+            "value": 0.1564
+          },
+          {
+            "attr_id": 304,
+            "value": 4.6
+          },
+          {
+            "attr_id": 305,
+            "value": 13.8
+          },
+          {
+            "attr_id": 306,
+            "value": 108.1
+          },
+          {
+            "attr_id": 307,
+            "value": 26.68
+          },
+          {
+            "attr_id": 309,
+            "value": 0.092
+          },
+          {
+            "attr_id": 312,
+            "value": 0.0078
+          },
+          {
+            "attr_id": 313,
+            "value": 21.85
+          },
+          {
+            "attr_id": 315,
+            "value": 0.0713
+          },
+          {
+            "attr_id": 317,
+            "value": 0.322
+          },
+          {
+            "attr_id": 318,
+            "value": 7835.18
+          },
+          {
+            "attr_id": 319,
+            "value": 0
+          },
+          {
+            "attr_id": 320,
+            "value": 391.92
+          },
+          {
+            "attr_id": 321,
+            "value": 3832.72
+          },
+          {
+            "attr_id": 322,
+            "value": 1736.96
+          },
+          {
+            "attr_id": 323,
+            "value": 0.4738
+          },
+          {
+            "attr_id": 324,
+            "value": 0
+          },
+          {
+            "attr_id": 328,
+            "value": 0
+          },
+          {
+            "attr_id": 334,
+            "value": 0
+          },
+          {
+            "attr_id": 337,
+            "value": 0
+          },
+          {
+            "attr_id": 338,
+            "value": 316.02
+          },
+          {
+            "attr_id": 341,
+            "value": 0.0092
+          },
+          {
+            "attr_id": 342,
+            "value": 0.0046
+          },
+          {
+            "attr_id": 343,
+            "value": 0
+          },
+          {
+            "attr_id": 344,
+            "value": 0.023
+          },
+          {
+            "attr_id": 345,
+            "value": 0
+          },
+          {
+            "attr_id": 346,
+            "value": 0
+          },
+          {
+            "attr_id": 347,
+            "value": 0
+          },
+          {
+            "attr_id": 401,
+            "value": 1.656
+          },
+          {
+            "attr_id": 404,
+            "value": 0.0304
+          },
+          {
+            "attr_id": 405,
+            "value": 0.0202
+          },
+          {
+            "attr_id": 406,
+            "value": 0.2967
+          },
+          {
+            "attr_id": 410,
+            "value": 0.1067
+          },
+          {
+            "attr_id": 415,
+            "value": 0.0704
+          },
+          {
+            "attr_id": 417,
+            "value": 6.44
+          },
+          {
+            "attr_id": 418,
+            "value": 0
+          },
+          {
+            "attr_id": 421,
+            "value": 4.048
+          },
+          {
+            "attr_id": 429,
+            "value": 0
+          },
+          {
+            "attr_id": 430,
+            "value": 6.302
+          },
+          {
+            "attr_id": 431,
+            "value": 0
+          },
+          {
+            "attr_id": 432,
+            "value": 6.44
+          },
+          {
+            "attr_id": 435,
+            "value": 6.44
+          },
+          {
+            "attr_id": 454,
+            "value": 0.046
+          },
+          {
+            "attr_id": 501,
+            "value": 0.0046
+          },
+          {
+            "attr_id": 502,
+            "value": 0.0722
+          },
+          {
+            "attr_id": 503,
+            "value": 0.029
+          },
+          {
+            "attr_id": 504,
+            "value": 0.0386
+          },
+          {
+            "attr_id": 505,
+            "value": 0.0382
+          },
+          {
+            "attr_id": 506,
+            "value": 0.0078
+          },
+          {
+            "attr_id": 507,
+            "value": 0.0313
+          },
+          {
+            "attr_id": 508,
+            "value": 0.023
+          },
+          {
+            "attr_id": 509,
+            "value": 0.0161
+          },
+          {
+            "attr_id": 510,
+            "value": 0.0258
+          },
+          {
+            "attr_id": 511,
+            "value": 0.0345
+          },
+          {
+            "attr_id": 512,
+            "value": 0.0152
+          },
+          {
+            "attr_id": 513,
+            "value": 0.0428
+          },
+          {
+            "attr_id": 514,
+            "value": 0.0718
+          },
+          {
+            "attr_id": 515,
+            "value": 0.1385
+          },
+          {
+            "attr_id": 516,
+            "value": 0.0175
+          },
+          {
+            "attr_id": 517,
+            "value": 0.0202
+          },
+          {
+            "attr_id": 518,
+            "value": 0.0202
+          },
+          {
+            "attr_id": 601,
+            "value": 0
+          },
+          {
+            "attr_id": 605,
+            "value": 0
+          },
+          {
+            "attr_id": 606,
+            "value": 0.0138
+          },
+          {
+            "attr_id": 607,
+            "value": 0
+          },
+          {
+            "attr_id": 608,
+            "value": 0
+          },
+          {
+            "attr_id": 609,
+            "value": 0
+          },
+          {
+            "attr_id": 610,
+            "value": 0
+          },
+          {
+            "attr_id": 611,
+            "value": 0
+          },
+          {
+            "attr_id": 612,
+            "value": 0
+          },
+          {
+            "attr_id": 613,
+            "value": 0.0133
+          },
+          {
+            "attr_id": 614,
+            "value": 0.0005
+          },
+          {
+            "attr_id": 615,
+            "value": 0
+          },
+          {
+            "attr_id": 617,
+            "value": 0.0023
+          },
+          {
+            "attr_id": 618,
+            "value": 0.04
+          },
+          {
+            "attr_id": 619,
+            "value": 0.0005
+          },
+          {
+            "attr_id": 620,
+            "value": 0
+          },
+          {
+            "attr_id": 621,
+            "value": 0
+          },
+          {
+            "attr_id": 624,
+            "value": 0
+          },
+          {
+            "attr_id": 625,
+            "value": 0
+          },
+          {
+            "attr_id": 626,
+            "value": 0.0005
+          },
+          {
+            "attr_id": 627,
+            "value": 0
+          },
+          {
+            "attr_id": 628,
+            "value": 0
+          },
+          {
+            "attr_id": 629,
+            "value": 0
+          },
+          {
+            "attr_id": 630,
+            "value": 0
+          },
+          {
+            "attr_id": 631,
+            "value": 0
+          },
+          {
+            "attr_id": 645,
+            "value": 0.0028
+          },
+          {
+            "attr_id": 646,
+            "value": 0.0409
+          },
+          {
+            "attr_id": 652,
+            "value": 0
+          },
+          {
+            "attr_id": 653,
+            "value": 0
+          },
+          {
+            "attr_id": 654,
+            "value": 0
+          },
+          {
+            "attr_id": 672,
+            "value": 0
+          },
+          {
+            "attr_id": 687,
+            "value": 0
+          },
+          {
+            "attr_id": 689,
+            "value": 0
+          },
+          {
+            "attr_id": 697,
+            "value": 0
+          }
+        ],
+        "nix_brand_name": null,
+        "nix_brand_id": null,
+        "nix_item_name": null,
+        "nix_item_id": null,
+        "upc": null,
+        "consumed_at": "2024-10-04T00:47:36+00:00",
+        "metadata": {
+          "is_raw_food": false
+        },
+        "source": 1,
+        "ndb_no": 11125,
+        "tags": {
+          "item": "carrot",
+          "measure": null,
+          "quantity": "1.0",
+          "food_group": 4,
+          "tag_id": 452
+        },
+        "alt_measures": [
+          {
+            "serving_weight": 46,
+            "measure": "carrot",
+            "seq": 3,
+            "qty": 1
+          },
+          {
+            "serving_weight": 78,
+            "measure": "cup slices",
+            "seq": 2,
+            "qty": 0.5
+          },
+          {
+            "serving_weight": 9.7,
+            "measure": "tbsp",
+            "seq": 1,
+            "qty": 1
+          },
+          {
+            "serving_weight": 100,
+            "measure": "g",
+            "seq": null,
+            "qty": 100
+          },
+          {
+            "serving_weight": 28.3495,
+            "measure": "wt. oz",
+            "seq": null,
+            "qty": 1
+          },
+          {
+            "serving_weight": 155.2,
+            "measure": "cup",
+            "seq": 100,
+            "qty": 1
+          },
+          {
+            "serving_weight": 3.23,
+            "measure": "tsp",
+            "seq": 101,
+            "qty": 1
+          }
+        ],
+        "lat": null,
+        "lng": null,
+        "meal_type": 5,
+        "photo": {
+          "thumb": "https://nix-tag-images.s3.amazonaws.com/452_thumb.jpg",
+          "highres": "https://nix-tag-images.s3.amazonaws.com/452_highres.jpg",
+          "is_user_uploaded": false
+        },
+        "sub_recipe": null,
+        "class_code": null,
+        "brick_code": null,
+        "tag_id": null
+      }
+    },
+    "orange": {
+      "quantity": 1,
+      "expiry_date": "2024-10-11T00:47:37.636439",
+      "added_date": "2024-10-04T00:47:37.636448",
+      "last_detected": "2024-10-04T00:47:37.636449",
+      "category": "fruits",
+      "portion_size": "large",
+      "nutritional_info": {
+        "food_name": "orange",
+        "brand_name": null,
+        "serving_qty": 1,
+        "serving_unit": "large",
+        "serving_weight_grams": 184,
+        "nf_calories": 90.16,
+        "nf_total_fat": 0.28,
+        "nf_saturated_fat": 0.03,
+        "nf_cholesterol": 0,
+        "nf_sodium": 1.84,
+        "nf_total_carbohydrate": 23.07,
+        "nf_dietary_fiber": 4.05,
+        "nf_sugars": 15.64,
+        "nf_protein": 1.67,
+        "nf_potassium": 305.44,
+        "nf_p": 42.32,
+        "full_nutrients": [
+          {
+            "attr_id": 203,
+            "value": 1.6744
+          },
+          {
+            "attr_id": 204,
+            "value": 0.276
+          },
+          {
+            "attr_id": 205,
+            "value": 23.0736
+          },
+          {
+            "attr_id": 207,
+            "value": 0.7912
+          },
+          {
+            "attr_id": 208,
+            "value": 90.16
+          },
+          {
+            "attr_id": 209,
+            "value": 0
+          },
+          {
+            "attr_id": 210,
+            "value": 7.8752
+          },
+          {
+            "attr_id": 211,
+            "value": 3.6248
+          },
+          {
+            "attr_id": 212,
+            "value": 4.14
+          },
+          {
+            "attr_id": 213,
+            "value": 0
+          },
+          {
+            "attr_id": 214,
+            "value": 0
+          },
+          {
+            "attr_id": 255,
+            "value": 158.1848
+          },
+          {
+            "attr_id": 268,
+            "value": 380.88
+          },
+          {
+            "attr_id": 269,
+            "value": 15.64
+          },
+          {
+            "attr_id": 287,
+            "value": 0
+          },
+          {
+            "attr_id": 291,
+            "value": 4.048
+          },
+          {
+            "attr_id": 301,
+            "value": 79.12
+          },
+          {
+            "attr_id": 303,
+            "value": 0.2392
+          },
+          {
+            "attr_id": 304,
+            "value": 20.24
+          },
+          {
+            "attr_id": 305,
+            "value": 42.32
+          },
+          {
+            "attr_id": 306,
+            "value": 305.44
+          },
+          {
+            "attr_id": 307,
+            "value": 1.84
+          },
+          {
+            "attr_id": 309,
+            "value": 0.1472
+          },
+          {
+            "attr_id": 312,
+            "value": 0.0718
+          },
+          {
+            "attr_id": 315,
+            "value": 0.0534
+          },
+          {
+            "attr_id": 317,
+            "value": 0
+          },
+          {
+            "attr_id": 318,
+            "value": 454.48
+          },
+          {
+            "attr_id": 319,
+            "value": 0
+          },
+          {
+            "attr_id": 320,
+            "value": 22.08
+          },
+          {
+            "attr_id": 321,
+            "value": 160.08
+          },
+          {
+            "attr_id": 322,
+            "value": 12.88
+          },
+          {
+            "attr_id": 323,
+            "value": 0.276
+          },
+          {
+            "attr_id": 324,
+            "value": 0
+          },
+          {
+            "attr_id": 328,
+            "value": 0
+          },
+          {
+            "attr_id": 334,
+            "value": 213.44
+          },
+          {
+            "attr_id": 337,
+            "value": 0
+          },
+          {
+            "attr_id": 338,
+            "value": 237.36
+          },
+          {
+            "attr_id": 341,
+            "value": 0
+          },
+          {
+            "attr_id": 342,
+            "value": 0
+          },
+          {
+            "attr_id": 343,
+            "value": 0
+          },
+          {
+            "attr_id": 344,
+            "value": 0.0184
+          },
+          {
+            "attr_id": 345,
+            "value": 0
+          },
+          {
+            "attr_id": 346,
+            "value": 0
+          },
+          {
+            "attr_id": 347,
+            "value": 0
+          },
+          {
+            "attr_id": 401,
+            "value": 108.744
+          },
+          {
+            "attr_id": 404,
+            "value": 0.1251
+          },
+          {
+            "attr_id": 405,
+            "value": 0.0938
+          },
+          {
+            "attr_id": 406,
+            "value": 0.782
+          },
+          {
+            "attr_id": 410,
+            "value": 0.4802
+          },
+          {
+            "attr_id": 415,
+            "value": 0.1454
+          },
+          {
+            "attr_id": 417,
+            "value": 62.56
+          },
+          {
+            "attr_id": 418,
+            "value": 0
+          },
+          {
+            "attr_id": 421,
+            "value": 15.456
+          },
+          {
+            "attr_id": 429,
+            "value": 0
+          },
+          {
+            "attr_id": 430,
+            "value": 0
+          },
+          {
+            "attr_id": 431,
+            "value": 0
+          },
+          {
+            "attr_id": 432,
+            "value": 62.56
+          },
+          {
+            "attr_id": 435,
+            "value": 62.56
+          },
+          {
+            "attr_id": 454,
+            "value": 0.184
+          },
+          {
+            "attr_id": 501,
+            "value": 0.0166
+          },
+          {
+            "attr_id": 502,
+            "value": 0.0331
+          },
+          {
+            "attr_id": 503,
+            "value": 0.0313
+          },
+          {
+            "attr_id": 504,
+            "value": 0.0534
+          },
+          {
+            "attr_id": 505,
+            "value": 0.0699
+          },
+          {
+            "attr_id": 506,
+            "value": 0.0166
+          },
+          {
+            "attr_id": 507,
+            "value": 0.0184
+          },
+          {
+            "attr_id": 508,
+            "value": 0.0386
+          },
+          {
+            "attr_id": 509,
+            "value": 0.0239
+          },
+          {
+            "attr_id": 510,
+            "value": 0.0478
+          },
+          {
+            "attr_id": 511,
+            "value": 0.2116
+          },
+          {
+            "attr_id": 512,
+            "value": 0.0239
+          },
+          {
+            "attr_id": 513,
+            "value": 0.0589
+          },
+          {
+            "attr_id": 514,
+            "value": 0.2558
+          },
+          {
+            "attr_id": 515,
+            "value": 0.4545
+          },
+          {
+            "attr_id": 516,
+            "value": 0.0423
+          },
+          {
+            "attr_id": 517,
+            "value": 0.333
+          },
+          {
+            "attr_id": 518,
+            "value": 0.0681
+          },
+          {
+            "attr_id": 601,
+            "value": 0
+          },
+          {
+            "attr_id": 605,
+            "value": 0
+          },
+          {
+            "attr_id": 606,
+            "value": 0.0313
+          },
+          {
+            "attr_id": 613,
+            "value": 0.0313
+          },
+          {
+            "attr_id": 617,
+            "value": 0.0478
+          },
+          {
+            "attr_id": 618,
+            "value": 0.0423
+          },
+          {
+            "attr_id": 619,
+            "value": 0.0166
+          },
+          {
+            "attr_id": 626,
+            "value": 0.0055
+          },
+          {
+            "attr_id": 636,
+            "value": 44.16
+          },
+          {
+            "attr_id": 645,
+            "value": 0.0552
+          },
+          {
+            "attr_id": 646,
+            "value": 0.057
+          }
+        ],
+        "nix_brand_name": null,
+        "nix_brand_id": null,
+        "nix_item_name": null,
+        "nix_item_id": null,
+        "upc": null,
+        "consumed_at": "2024-10-04T00:47:36+00:00",
+        "metadata": {
+          "is_raw_food": false
+        },
+        "source": 1,
+        "ndb_no": 9202,
+        "tags": {
+          "item": "orange",
+          "measure": "large",
+          "quantity": null,
+          "food_group": 3,
+          "tag_id": 719
+        },
+        "alt_measures": [
+          {
+            "serving_weight": 154,
+            "measure": "NLEA serving",
+            "seq": 3,
+            "qty": 1
+          },
+          {
+            "serving_weight": 140,
+            "measure": "fruit (2-7/8\" dia)",
+            "seq": 2,
+            "qty": 1
+          },
+          {
+            "serving_weight": 165,
+            "measure": "cup sections, without membranes",
+            "seq": 1,
+            "qty": 1
+          },
+          {
+            "serving_weight": 17,
+            "measure": "slice",
+            "seq": 80,
+            "qty": 1
+          },
+          {
+            "serving_weight": 17,
+            "measure": "section",
+            "seq": 81,
+            "qty": 1
+          },
+          {
+            "serving_weight": 96,
+            "measure": "small",
+            "seq": 82,
+            "qty": 1
+          },
+          {
+            "serving_weight": 184,
+            "measure": "large",
+            "seq": 83,
+            "qty": 1
+          },
+          {
+            "serving_weight": 28.35,
+            "measure": "oz",
+            "seq": 84,
+            "qty": 1
+          },
+          {
+            "serving_weight": 100,
+            "measure": "g",
+            "seq": null,
+            "qty": 100
+          }
+        ],
+        "lat": null,
+        "lng": null,
+        "meal_type": 5,
+        "photo": {
+          "thumb": "https://nix-tag-images.s3.amazonaws.com/719_thumb.jpg",
+          "highres": "https://nix-tag-images.s3.amazonaws.com/719_highres.jpg",
+          "is_user_uploaded": false
+        },
+        "sub_recipe": null,
+        "class_code": null,
+        "brick_code": null,
+        "tag_id": null
+      }
+    }
+  }
 }

@@ -1,3 +1,4 @@
+import sys
 import os
 import urllib.request
 import cv2
@@ -8,12 +9,25 @@ from inventory.inventory_manager import InventoryManager
 from recipes import find_matching_recipes
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from models import db, User, InventoryItem  # Make sure this line is present
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from models import db, User, InventoryItem
 from recipes.recipe_api import find_recipes_by_ingredients, get_recipe_details
 from dotenv import load_dotenv
+from openai import OpenAI
+import io
+from pydub import AudioSegment
+from pydub.playback import play
+import requests
+import time
+from forms import UserPreferencesForm
 
+# Ensure the src folder is added to Python's module search path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+NUTRITIONIX_APP_ID = os.getenv('NUTRITIONIX_APP_ID')
+NUTRITIONIX_API_KEY = os.getenv('NUTRITIONIX_API_KEY')
 
 load_dotenv()  # This loads the variables from .env
 
@@ -32,11 +46,16 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback_secret_key_for_deve
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db.init_app(app)
+# Initialize extensions
+db.init_app(app)  # Initialize the `db` instance
+migrate = Migrate(app, db)
+
+from models import User, InventoryItem
 
 # Create tables
 with app.app_context():
-    db.create_all()
+    db.create_all()  # This will create tables based on the models
+
 
     # Create a test user if it doesn't exist
     if not User.query.filter_by(username='testuser').first():
@@ -63,7 +82,7 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user)  # This should use the user's ID
+            login_user(user)
             return redirect(url_for('home'))
         else:
             flash('Invalid username or password')
@@ -78,7 +97,7 @@ def logout():
 @app.route('/')
 @login_required
 def home():
-    user_inventory = InventoryItem.query.filter_by(user_id=current_user.id).all()
+    user_inventory = inventory_manager.get_inventory(current_user.id)
     return render_template('index.html', username=current_user.username, inventory=user_inventory)
 
 
@@ -105,6 +124,42 @@ def setup_cameras():
     camera_manager.add_camera('main', 'https://media.gettyimages.com/id/2151094361/photo/healthy-rainbow-colored-fruits-and-vegetables-background.webp?s=2048x2048&w=gi&k=20&c=eW6_Tp52NF3I_JJhYoFanTk9F72K8y_ngxkhyZMNLYI=')
     # You can add more cameras here in the future
     return camera_manager
+
+def generate_and_play_speech(text):
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=text
+    )
+    
+    audio_data = io.BytesIO(response.content)
+    audio = AudioSegment.from_file(audio_data, format="mp3")
+    play(audio)
+
+def estimate_portion_size(object_size):
+    if object_size < 1000:  # small objects
+        return "small"
+    elif object_size < 5000:  # medium objects
+        return "medium"
+    else:  # large objects
+        return "large"
+
+def get_nutritional_info(food_item, portion_size):
+    url = "https://trackapi.nutritionix.com/v2/natural/nutrients"
+    headers = {
+        "x-app-id": NUTRITIONIX_APP_ID,
+        "x-app-key": NUTRITIONIX_API_KEY,
+        "Content-Type": "application/json"
+    }
+    data = {
+        "query": f"{portion_size} {food_item}"
+    }
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+        return response.json()['foods'][0]
+    else:
+        print(f"Error getting nutritional info: {response.status_code}, {response.text}")
+        return None
 
 # Initialize modules
 module_manager = ModuleManager()
@@ -147,6 +202,10 @@ def detect_objects():
     image = camera_manager.get_last_image('main')
     if image is not None:
         detected_objects = object_detector.detect(image)
+        for obj in detected_objects:
+            obj['portion_size'] = estimate_portion_size(obj['box']['width'] * obj['box']['height'])
+            obj['nutritional_info'] = get_nutritional_info(obj['class'], obj['portion_size'])
+        
         inventory_manager.update_from_detection(current_user.id, detected_objects)
         
         # Draw bounding boxes on the image
@@ -171,6 +230,85 @@ def detect_objects():
         })
     else:
         return jsonify({"error": "No image available for detection"})
+
+@app.route('/preferences', methods=['GET', 'POST'])
+@login_required
+def user_preferences():
+    form = UserPreferencesForm()
+    if form.validate_on_submit():
+        current_user.dietary_preference = form.dietary_preference.data
+        current_user.calorie_goal = form.calorie_goal.data
+        current_user.protein_goal = form.protein_goal.data
+        current_user.carb_goal = form.carb_goal.data
+        current_user.fat_goal = form.fat_goal.data
+        db.session.commit()
+        flash('Your preferences have been updated.', 'success')
+        return redirect(url_for('user_preferences'))
+    elif request.method == 'GET':
+        form.dietary_preference.data = current_user.dietary_preference
+        form.calorie_goal.data = current_user.calorie_goal
+        form.protein_goal.data = current_user.protein_goal
+        form.carb_goal.data = current_user.carb_goal
+        form.fat_goal.data = current_user.fat_goal
+    return render_template('user_preferences.html', form=form)
+
+@app.route('/chat', methods=['POST'])
+@login_required
+def chat():
+    message = request.json.get('message')
+    chat_history = request.json.get('history', [])
+    inventory = inventory_manager.get_inventory(current_user.id)
+    
+    # Prepare the messages for the GPT model
+    messages = [
+        {"role": "system", "content": "You are a helpful kitchen assistant for a smart fridge. You can provide recipe suggestions, nutritional information, and general cooking advice based on the user's inventory."},
+        {"role": "system", "content": f"The current inventory is: {inventory}"},
+    ] + chat_history + [{"role": "user", "content": message}]
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages
+    )
+    
+    assistant_response = response.choices[0].message.content
+    
+    # Generate speech from the assistant's response
+    speech_response = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=assistant_response
+    )
+    
+    # Save the audio file with a unique name
+    audio_filename = f"response_{int(time.time())}.mp3"
+    audio_path = os.path.join(app.static_folder, audio_filename)
+    with open(audio_path, "wb") as f:
+        f.write(speech_response.content)
+    
+    return jsonify({
+        "response": assistant_response,
+        "audio_url": f"/static/{audio_filename}"
+    })
+        
+@app.route('/voice_query', methods=['POST'])
+@login_required
+def voice_query():
+    query = request.json.get('query')
+    inventory = inventory_manager.get_inventory(current_user.id)
+    
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant for a smart fridge. The user will ask about nutritional information for items in their fridge."},
+            {"role": "user", "content": f"Given this inventory: {inventory}, answer this query: {query}"}
+        ]
+    )
+    
+    answer = response.choices[0].message.content
+    generate_and_play_speech(answer)
+    
+    return jsonify({"response": answer})
+
 
 @app.route('/inventory')
 @login_required
@@ -201,6 +339,16 @@ def get_inventory_data():
 @app.route('/static/<path:path>')
 def send_static(path):
     return send_from_directory('static', path)
+
+@app.route('/nutrition_summary')
+@login_required
+def nutrition_summary():
+    inventory = inventory_manager.get_inventory(current_user.id)
+    total_nutrition = inventory_manager.get_total_nutrition(current_user.id)
+    
+    return render_template('nutrition_summary.html', 
+                           nutrition=total_nutrition, 
+                           inventory=inventory)
 
 @app.route('/expiring-soon')
 @login_required

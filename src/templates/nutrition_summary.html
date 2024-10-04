@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nutrition Summary</h1>
+    <div class="nutrition-summary">
+        <p>Total Calories: {{ nutrition.calories|round(2) }}</p>
+        <p>Total Protein: {{ nutrition.protein|round(2) }}g</p>
+        <p>Total Carbs: {{ nutrition.carbs|round(2) }}g</p>
+        <p>Total Fat: {{ nutrition.fat|round(2) }}g</p>
+    </div>
+
+    <h2>Nutrition Summary</h2>
+    <div class="nutrition-summary">
+        <p>Total Calories: {{ nutrition.calories|round(2) }} / {{ current_user.calorie_goal or 'No goal set' }}</p>
+        <p>Total Protein: {{ nutrition.protein|round(2) }}g / {{ current_user.protein_goal or 'No goal set' }}g</p>
+        <p>Total Carbs: {{ nutrition.carbs|round(2) }}g / {{ current_user.carb_goal or 'No goal set' }}g</p>
+        <p>Total Fat: {{ nutrition.fat|round(2) }}g / {{ current_user.fat_goal or 'No goal set' }}g</p>
+    </div>
+
+    <h2>Inventory Nutritional Details</h2>
+    <table>
+        <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Calories</th>
+            <th>Protein</th>
+            <th>Carbs</th>
+            <th>Fat</th>
+        </tr>
+        {% for item, details in inventory.items() %}
+        <tr>
+            <td>{{ item }}</td>
+            <td>{{ details.quantity }}</td>
+            <td>{{ details.nutritional_info.nf_calories|round(2) if details.nutritional_info else 'N/A' }}</td>
+            <td>{{ details.nutritional_info.nf_protein|round(2) if details.nutritional_info else 'N/A' }}g</td>
+            <td>{{ details.nutritional_info.nf_total_carbohydrate|round(2) if details.nutritional_info else 'N/A' }}g</td>
+            <td>{{ details.nutritional_info.nf_total_fat|round(2) if details.nutritional_info else 'N/A' }}g</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

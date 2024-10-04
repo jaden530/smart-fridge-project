@@ -41,6 +41,30 @@
             margin-left: 10px;
             font-size: 0.8em;
         }
+
+        #chatBox {
+    width: 400px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 20px;
+}
+
+#chatHistory {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#chatInput {
+    width: 70%;
+    padding: 5px;
+}
+
+button {
+    padding: 5px 10px;
+}
     </style>
 </head>
 <body>
@@ -71,9 +95,19 @@
     </div>
     <div id="detectedObjects"></div>
     <div id="expiringSoon"></div>
+    
+    <div id="chatBox">
+        <h2>Chat with Kitchen Assistant</h2>
+        <div id="chatHistory"></div>
+        <input type="text" id="chatInput" placeholder="Ask your kitchen assistant...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <a href="{{ url_for('nutrition_summary') }}">View Nutrition Summary</a>
 
     <script>
         let inventoryChart;
+        let chatHistory = [];
 
         function captureImage() {
     console.log("Capturing image...");
@@ -111,6 +145,68 @@ function detectObjects() {
             document.getElementById('status').innerText = "Error detecting objects";
         });
 }
+
+
+function startVoiceQuery() {
+    const query = prompt("What would you like to know about your inventory?");
+    if (query) {
+        fetch('/voice_query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({query: query}),
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('voiceQueryResult').textContent = data.response;
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (message) {
+        displayMessage('You', message);
+        chatHistory.push({"role": "user", "content": message});
+        
+        fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({message: message, history: chatHistory}),
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayMessage('Assistant', data.response);
+            chatHistory.push({"role": "assistant", "content": data.response});
+            
+            // Play the audio response
+            const audio = new Audio(data.audio_url);
+            audio.play();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+        
+        input.value = '';
+    }
+}
+
+function displayMessage(sender, message) {
+    const chatHistory = document.getElementById('chatHistory');
+    const messageElement = document.createElement('p');
+    messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    chatHistory.appendChild(messageElement);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+
 
         function displayDetectedObjects(objects) {
             const container = document.getElementById('detectedObjects');
@@ -378,7 +474,11 @@ function detectObjects() {
             setInterval(checkNotifications, 300000); // Check every 5 minutes
         });
 
-
+document.getElementById('chatInput').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+});
 
 
     

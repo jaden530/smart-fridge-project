@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>User Preferences</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div>
+            {{ form.dietary_preference.label }}
+            {{ form.dietary_preference }}
+        </div>
+        <div>
+            {{ form.calorie_goal.label }}
+            {{ form.calorie_goal }}
+        </div>
+        <div>
+            {{ form.protein_goal.label }}
+            {{ form.protein_goal }}
+        </div>
+        <div>
+            {{ form.carb_goal.label }}
+            {{ form.carb_goal }}
+        </div>
+        <div>
+            {{ form.fat_goal.label }}
+            {{ form.fat_goal }}
+        </div>
+        {{ form.submit }}
+    </form>
+{% endblock %}
