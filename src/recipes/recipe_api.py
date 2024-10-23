@@ -6,21 +6,95 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import json
 
-# Try to load from .env file, but don't fail if it doesn't exist
-load_dotenv(override=True)
+# Load environment variables from project root
+base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(base_dir, '.env'))
 
+class SpoonacularAPI:
+    def __init__(self):
+        self.api_key = os.getenv('SPOONACULAR_API_KEY')
+        if not self.api_key:
+            print("Warning: Spoonacular API key not found")
+        self.base_url = 'https://api.spoonacular.com/recipes'
+
+    def find_recipes_by_ingredients(self, ingredients, dietary_preference=None):
+        if not self.api_key:
+            print("Warning: Spoonacular API key not configured")
+            return []
+
+        endpoint = f"{self.base_url}/findByIngredients"
+        params = {
+            'apiKey': self.api_key,
+            'ingredients': ','.join(ingredients),
+            'number': 10,
+            'ranking': 2,
+            'ignorePantry': True
+        }
+        
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            recipes = response.json()
+            
+            if dietary_preference:
+                filtered_recipes = []
+                for recipe in recipes:
+                    details = self.get_recipe_details(recipe['id'])
+                    if details.get('diets', []) and dietary_preference.lower() in [diet.lower() for diet in details['diets']]:
+                        filtered_recipes.append(recipe)
+                return filtered_recipes
+            return recipes
+        except requests.RequestException as e:
+            print(f"Error finding recipes: {e}")
+            return []
+
+    def get_recipe_details(self, recipe_id):
+        if not self.api_key:
+            print("Warning: Spoonacular API key not configured")
+            return {
+                "error": "API key not configured",
+                "title": "Recipe Unavailable",
+                "instructions": ["API key required to fetch recipe details"],
+                "extendedIngredients": []
+            }
+
+        endpoint = f"{self.base_url}/{recipe_id}/information"
+        params = {
+            'apiKey': self.api_key,
+            'includeNutrition': True
+        }
+        
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            print(f"Error fetching recipe details: {e}")
+            return {
+                "error": "Failed to fetch recipe details",
+                "title": "Recipe Temporarily Unavailable",
+                "instructions": ["Unable to load recipe details. Please try again later."],
+                "extendedIngredients": []
+            }
+
+# Create a single instance of SpoonacularAPI
+api = SpoonacularAPI()
+
+# Define the functions that use the API instance
+def find_recipes_by_ingredients(ingredients, dietary_preference=None):
+    return api.find_recipes_by_ingredients(ingredients, dietary_preference)
+
+def get_recipe_details(recipe_id):
+    return api.get_recipe_details(recipe_id)
+
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-def get_api_key():
-    # Check multiple possible sources for the API key
-    return (os.getenv('SPOONACULAR_API_KEY') or 
-            os.environ.get('SPOONACULAR_API_KEY') or 
-            input("Please enter your Spoonacular API key: "))
-
-BASE_URL = 'https://api.spoonacular.com/recipes'
-
-def get_ai_recipe_suggestion(ingredients):
-    prompt = f"Create a recipe using some or all of these ingredients: {', '.join(ingredients)}. Format the response as a JSON object with 'name', 'ingredients', and 'instructions' keys."
+def get_ai_recipe_suggestion(ingredients, dietary_preference=None):
+    prompt = f"Create a recipe using some or all of these ingredients: {', '.join(ingredients)}. "
+    if dietary_preference:
+        prompt += f"The recipe should be suitable for a {dietary_preference} diet. "
+    prompt += "Format the response as a JSON object with 'name', 'ingredients', and 'instructions' keys."
     
     try:
         response = client.chat.completions.create(
@@ -35,48 +109,4 @@ def get_ai_recipe_suggestion(ingredients):
         return json.loads(recipe_json)
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
-        return None
-
-def find_recipes_by_ingredients(ingredients):
-    API_KEY = get_api_key()
-    endpoint = f"{BASE_URL}/findByIngredients"
-    params = {
-        'apiKey': API_KEY,
-        'ingredients': ','.join(ingredients),
-        'number': 5,
-        'ranking': 2
-    }
-    try:
-        response = requests.get(endpoint, params=params)
-        if response.status_code == 200:
-            recipes = response.json()
-            if recipes:
-                return recipes
-            else:
-                # If no recipes found, try AI suggestion
-                ai_recipe = get_ai_recipe_suggestion(ingredients)
-                if ai_recipe:
-                    return [ai_recipe]  # Return as a list to maintain consistency
-                else:
-                    return []
-        else:
-            print(f"Error: {response.status_code}, {response.text}")
-            return None
-    except requests.RequestException as e:
-        print(f"Request failed: {e}")
-        return None
-        
-
-def get_recipe_details(recipe_id):
-    API_KEY = get_api_key()
-    endpoint = f"{BASE_URL}/{recipe_id}/information"
-    params = {
-        'apiKey': API_KEY,
-        'includeNutrition': False
-    }
-    response = requests.get(endpoint, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error: {response.status_code}, {response.text}")
         return None

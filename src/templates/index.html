@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Fridge</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,7 +18,7 @@
             display: flex;
             justify-content: space-between;
         }
-        .inventory, .chart {
+        .left-column, .right-column {
             width: 48%;
         }
         #capturedImage {
@@ -41,30 +43,91 @@
             margin-left: 10px;
             font-size: 0.8em;
         }
-
         #chatBox {
-    width: 400px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-top: 20px;
-}
+            width: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        #chatHistory {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        #chatInput {
+            width: 70%;
+            padding: 5px;
+        }
+        button {
+            padding: 5px 10px;
+        }
+        /* New styles for recipe suggestions */
+        #recipeList {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .recipe-item {
+            width: calc(50% - 10px);
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .recipe-details {
+            display: none;
+            margin-top: 10px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .recipe-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+        }
 
-#chatHistory {
-    height: 300px;
-    overflow-y: auto;
-    border: 1px solid #eee;
-    padding: 10px;
-    margin-bottom: 10px;
-}
+        .recipe-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
 
-#chatInput {
-    width: 70%;
-    padding: 5px;
-}
+        .recipe-details-content {
+            max-height: 500px;
+            overflow-y: auto;
+        }
 
-button {
-    padding: 5px 10px;
-}
+        .recipe-details h4 {
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .recipe-details ul, 
+        .recipe-details ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .recipe-details li {
+            margin-bottom: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -76,22 +139,52 @@ button {
     <button onclick="clearInventory()">Clear Inventory</button>
     <button onclick="toggleDetailedInfo()">Toggle Detailed Info</button>
     <button onclick="checkExpiringSoon()">Check Expiring Soon</button>
+    <button onclick="location.href='/waste-prevention'">Waste Prevention</button>
+    <button onclick="location.href='/advanced-recipe-search'">Advanced Recipe Search</button>
+    <button onclick="location.href='/health-dashboard'">Health Dashboard</button>
     <div id="notifications"></div>
     <div id="status"></div>
     <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
     <div class="container">
-        <div class="inventory">
-            <h2>Inventory</h2>
-            <div id="inventory"></div>
+        <div class="left-column">
+            <div class="inventory">
+                <h2>Inventory</h2>
+                <div id="inventory"></div>
+            </div>
+            <div class="chart">
+                <h2>Inventory Chart</h2>
+                <canvas id="inventoryBarChart"></canvas>
+            </div>
+            <div class="chart">
+                <h2>Inventory Trends</h2>
+                <canvas id="inventoryTrendChart"></canvas>
+            </div>
         </div>
-        <div class="chart">
-            <h2>Inventory Chart</h2>
-            <canvas id="inventoryBarChart"></canvas>
+        <div class="right-column">
+            <div id="recipeSuggestions">
+                <h2>Recipe Suggestions</h2>
+                <button onclick="getSuggestedRecipes()">Get Recipe Suggestions</button>
+                <div id="recipeList"></div>
+            </div>
         </div>
-        <div id="recipeSuggestions">
-            <h2>Recipe Suggestions</h2>
-            <button onclick="getSuggestedRecipes()">Get Recipe Suggestions</button>
-            <div id="recipeList"></div>
+    </div>
+    <div id="mealPlanner">
+        <h2>Meal Planner</h2>
+        <table id="mealPlannerTable">
+            <tr>
+                <th>Day</th>
+                <th>Breakfast</th>
+                <th>Lunch</th>
+                <th>Dinner</th>
+            </tr>
+            <!-- Days will be added here dynamically -->
+        </table>
+        <button onclick="saveMealPlan()">Save Meal Plan</button>
+    </div>
+    <div id="shoppingList">
+        <h2>Shopping List</h2>
+        <button onclick="generateShoppingList()">Generate Shopping List</button>
+        <ul id="shoppingListItems"></ul>
     </div>
     <div id="detectedObjects"></div>
     <div id="expiringSoon"></div>
@@ -104,10 +197,12 @@ button {
     </div>
 
     <a href="{{ url_for('nutrition_summary') }}">View Nutrition Summary</a>
+    <a href="{{ url_for('user_preferences') }}">User Preferences</a>
 
     <script>
         let inventoryChart;
         let chatHistory = [];
+        let currentMealPlan = {};
 
         function captureImage() {
     console.log("Capturing image...");
@@ -198,6 +293,69 @@ function sendMessage() {
     }
 }
 
+function generateShoppingList() {
+    fetch('/generate_shopping_list')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Received shopping list:", data);  // Debug log
+            const list = document.getElementById('shoppingListItems');
+            list.innerHTML = '';
+            if (Object.keys(data).length === 0) {
+                list.innerHTML = '<li>No items needed for the current meal plan.</li>';
+            } else {
+                for (const [item, details] of Object.entries(data)) {
+                    const li = document.createElement('li');
+                    li.textContent = `${item}: ${details.amount} ${details.unit}`;
+                    list.appendChild(li);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error generating shopping list:', error);
+            document.getElementById('shoppingListItems').innerHTML = '<li>Error generating shopping list. Please try again later.</li>';
+        });
+}
+
+function updateInventoryTrendChart() {
+    fetch('/inventory_trends')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('inventoryTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: Object.entries(data).map(([item, values]) => ({
+                        label: item,
+                        data: values.map(v => ({ x: v.date, y: v.quantity })),
+                        fill: false
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+}
+
+
+
+
 function displayMessage(sender, message) {
     const chatHistory = document.getElementById('chatHistory');
     const messageElement = document.createElement('p');
@@ -270,50 +428,234 @@ function displayMessage(sender, message) {
             });
     }
 
-    function getSuggestedRecipes() {
+    function viewRecipeDetails(recipeId) {
+    const detailsDiv = document.getElementById(`details-${recipeId}`);
+    if (!detailsDiv) return;
+
+    fetch(`/recipe_details/${recipeId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            detailsDiv.innerHTML = `
+                <div class="recipe-full-details">
+                    <h3>${data.title}</h3>
+                    ${data.image ? `<img src="${data.image}" alt="${data.title}" class="recipe-detail-image">` : ''}
+                    <div class="recipe-info">
+                        <p>Cooking Time: ${data.readyInMinutes} minutes</p>
+                        <p>Servings: ${data.servings}</p>
+                    </div>
+                    <div class="recipe-ingredients">
+                        <h4>Ingredients:</h4>
+                        <ul>
+                            ${data.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="recipe-instructions">
+                        <h4>Instructions:</h4>
+                        <ol>
+                            ${data.instructions.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                    ${data.nutrition ? `
+                        <div class="recipe-nutrition">
+                            <h4>Nutrition Information:</h4>
+                            <ul>
+                                ${Object.entries(data.nutrition).map(([key, value]) => 
+                                    `<li>${key}: ${value}</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            detailsDiv.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            detailsDiv.innerHTML = '<p>Error loading recipe details. Please try again later.</p>';
+            detailsDiv.style.display = 'block';
+        });
+}
+function getSuggestedRecipes() {
     fetch('/suggest_recipes')
         .then(response => response.json())
         .then(data => {
             const recipeList = document.getElementById('recipeList');
             recipeList.innerHTML = '';
+            
             if (data.message) {
-                // This is an error message
                 recipeList.innerHTML = `<p>${data.message}</p>`;
-            } else if (data.length === 0) {
-                recipeList.innerHTML = '<p>No recipes found with current ingredients.</p>';
-            } else {
-                data.forEach(recipe => {
-                    const recipeDiv = document.createElement('div');
-                    recipeDiv.innerHTML = `
-                        <h3>${recipe.title}</h3>
-                        <p><strong>Used Ingredients:</strong> ${recipe.usedIngredients ? recipe.usedIngredients.map(ing => ing.name).join(', ') : 'N/A'}</p>
-                        <p><strong>Missing Ingredients:</strong> ${recipe.missedIngredients ? recipe.missedIngredients.map(ing => ing.name).join(', ') : 'N/A'}</p>
-                        ${recipe.instructions ? `<p><strong>Instructions:</strong> ${recipe.instructions}</p>` : ''}
-                    `;
-                    recipeList.appendChild(recipeDiv);
-                });
+                return;
             }
+            
+            data.forEach(recipe => {
+                const recipeDiv = document.createElement('div');
+                recipeDiv.className = 'recipe-item';
+                
+                // Create a container for the details that will be populated later
+                const detailsContainer = document.createElement('div');
+                detailsContainer.id = `details-${recipe.id}`;
+                detailsContainer.className = 'recipe-details';
+                detailsContainer.style.display = 'none';
+
+                recipeDiv.innerHTML = `
+                    <h3>${recipe.title}</h3>
+                    <p>Used Ingredients: ${recipe.usedIngredientCount}</p>
+                    <p>Missing Ingredients: ${recipe.missedIngredientCount}</p>
+                    <button onclick="toggleRecipeDetails(${recipe.id}, this)">View Details</button>
+                `;
+                
+                recipeDiv.appendChild(detailsContainer);
+                recipeList.appendChild(recipeDiv);
+            });
         })
         .catch(error => {
             console.error('Error getting recipe suggestions:', error);
-            document.getElementById('recipeList').innerHTML = '<p>Error loading recipe suggestions. Please try again later.</p>';
+            document.getElementById('recipeList').innerHTML = 
+                '<p>Error loading recipe suggestions. Please try again later.</p>';
         });
 }
 
-        function updateExpiryDate(item, newDate) {
-            fetch('/update-expiry', {
+function toggleRecipeDetails(recipeId, button) {
+    const detailsDiv = document.getElementById(`details-${recipeId}`);
+    if (!detailsDiv) return;
+
+    if (detailsDiv.style.display === 'none') {
+        fetch(`/recipe_details/${recipeId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                detailsDiv.innerHTML = `
+                    <div class="recipe-details-content">
+                        ${data.image ? `<img src="${data.image}" alt="${data.title}" style="max-width: 100%; margin: 10px 0;">` : ''}
+                        <p><strong>Cooking Time:</strong> ${data.readyInMinutes || 'Not specified'} minutes</p>
+                        <p><strong>Servings:</strong> ${data.servings || 'Not specified'}</p>
+                        
+                        <h4>Ingredients:</h4>
+                        <ul>
+                            ${data.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                        
+                        <h4>Instructions:</h4>
+                        <ol>
+                            ${data.instructions.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                `;
+                detailsDiv.style.display = 'block';
+                button.textContent = 'Hide Details';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                detailsDiv.innerHTML = '<p>Error loading recipe details. Please try again later.</p>';
+                detailsDiv.style.display = 'block';
+            });
+    } else {
+        detailsDiv.style.display = 'none';
+        button.textContent = 'View Details';
+    }
+}
+
+        function getRecipeDetails(recipeId, detailsDiv) {
+            fetch(`/recipe_details/${recipeId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    detailsDiv.innerHTML = `
+                        <img src="${data.image}" alt="${data.title}" style="max-width: 100%;">
+                        <h3>Ingredients:</h3>
+                        <ul>
+                            ${data.extendedIngredients.map(ing => `<li>${ing.original}</li>`).join('')}
+                        </ul>
+                        <h3>Instructions:</h3>
+                        <ol>
+                            ${data.analyzedInstructions[0].steps.map(step => `<li>${step.step}</li>`).join('')}
+                        </ol>
+                        <h3>Nutrition Information:</h3>
+                        <p>Calories: ${data.nutrition.nutrients.find(n => n.name === 'Calories').amount} kcal</p>
+                        <p>Protein: ${data.nutrition.nutrients.find(n => n.name === 'Protein').amount} g</p>
+                        <p>Carbohydrates: ${data.nutrition.nutrients.find(n => n.name === 'Carbohydrates').amount} g</p>
+                        <p>Fat: ${data.nutrition.nutrients.find(n => n.name === 'Fat').amount} g</p>
+                    `;
+                    detailsDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error getting recipe details:', error);
+                    detailsDiv.innerHTML = '<p>Error loading recipe details. Please try again later.</p>';
+                    detailsDiv.style.display = 'block';
+                });
+        }
+        function initializeMealPlanner() {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const table = document.getElementById('mealPlannerTable');
+            days.forEach(day => {
+                const row = table.insertRow();
+                row.insertCell(0).textContent = day;
+                ['breakfast', 'lunch', 'dinner'].forEach(meal => {
+                    const cell = row.insertCell();
+                    cell.innerHTML = `<select onchange="updateMealPlan('${day}', '${meal}', this.value)"><option value="">Select a recipe</option></select>`;
+                });
+            });
+            loadMealPlan();
+        }
+
+        function loadMealPlan() {
+    Promise.all([
+        fetch('/get_meal_plan').then(response => response.json()),
+        fetch('/suggest_recipes').then(response => response.json())
+    ])
+    .then(([mealPlan, recipes]) => {
+        currentMealPlan = mealPlan;
+        const recipeOptions = recipes.map(recipe => `<option value="${recipe.id}">${recipe.title}</option>`).join('');
+        document.querySelectorAll('#mealPlannerTable select').forEach(select => {
+            select.innerHTML = `<option value="">Select a recipe</option>${recipeOptions}`;
+        });
+        updateMealPlannerTable();
+    });
+}
+
+        function updateMealPlan(day, meal, recipeId) {
+            if (!currentMealPlan[day]) {
+                currentMealPlan[day] = {};
+            }
+            currentMealPlan[day][meal] = recipeId;
+        }
+
+        function updateMealPlannerTable() {
+            const table = document.getElementById('mealPlannerTable');
+            for (let i = 1; i < table.rows.length; i++) {
+                const day = table.rows[i].cells[0].textContent;
+                ['breakfast', 'lunch', 'dinner'].forEach((meal, index) => {
+                    const select = table.rows[i].cells[index + 1].querySelector('select');
+                    if (currentMealPlan[day] && currentMealPlan[day][meal]) {
+                        select.value = currentMealPlan[day][meal];
+                    }
+                });
+            }
+        }
+
+        function saveMealPlan() {
+            fetch('/save_meal_plan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ item_name: item, new_expiry: newDate }),
+                body: JSON.stringify(currentMealPlan),
             })
             .then(response => response.json())
             .then(data => {
-                console.log(data.message);
-                updateInventory();
-            })
-            .catch(error => console.error('Error updating expiry date:', error));
+                alert(data.message);
+            });
         }
 
         function checkExpiringSoon() {
@@ -465,23 +807,19 @@ function displayMessage(sender, message) {
     updateInventory();
     checkExpiringSoon();
     getSuggestedRecipes();
+    updateInventoryTrendChart();
+    initializeMealPlanner();
+    checkNotifications();
 
+    // Set up periodic checks
+    setInterval(checkNotifications, 300000); // Check every 5 minutes
 
-    document.addEventListener('DOMContentLoaded', () => {
-            updateInventory();
-            checkNotifications();
-            getSuggestedRecipes();
-            setInterval(checkNotifications, 300000); // Check every 5 minutes
-        });
-
-document.getElementById('chatInput').addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
-});
-
-
-    
+    // Set up chat input event listener
+    document.getElementById('chatInput').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    });
 });
     </script>
 </body>

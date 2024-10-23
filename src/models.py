@@ -31,4 +31,33 @@ class InventoryItem(db.Model):
     nutritional_info = db.Column(db.JSON)
     last_detected = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Add these classes to models.py
+
+class NutritionLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    item_name = db.Column(db.String(64), nullable=False)
+    quantity = db.Column(db.Float, nullable=False)
+    calories = db.Column(db.Float)
+    protein = db.Column(db.Float)
+    carbs = db.Column(db.Float)
+    fat = db.Column(db.Float)
+    fiber = db.Column(db.Float)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('nutrition_logs', lazy=True))
+
+class HealthGoals(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    calorie_goal = db.Column(db.Integer)
+    protein_goal = db.Column(db.Integer)
+    carb_goal = db.Column(db.Integer)
+    fat_goal = db.Column(db.Integer)
+    fiber_goal = db.Column(db.Integer)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('health_goals', lazy=True, uselist=False))
+
     user = db.relationship('User', backref=db.backref('inventory_items', lazy=True))

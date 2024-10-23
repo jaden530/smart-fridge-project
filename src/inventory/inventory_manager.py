@@ -75,9 +75,21 @@ class InventoryManager:
                 self.inventories[user_id][item_name]['nutritional_info'] = nutritional_info
         self.save_inventory()
 
-    def get_inventory(self, user_id):
-        inventory = self.inventories.get(str(user_id), {})
-        print(f"Debug: Inventory for user {user_id}: {inventory}")  # Add this debug print
+    def get_inventory(self, user_id, date=None):
+        # If no date is provided, return current inventory
+        if date is None:
+            return self.inventories.get(str(user_id), {})
+        
+        # Otherwise, return inventory as of the given date
+        inventory = {}
+        for item, details in self.inventories.get(str(user_id), {}).items():
+            if datetime.fromisoformat(details['added_date']) <= date:
+                inventory[item] = details.copy()
+                # Adjust quantity based on usage up to the given date
+                # This is a simplified version and may need to be improved
+                days_since_added = (date - datetime.fromisoformat(details['added_date'])).days
+                inventory[item]['quantity'] -= days_since_added  # Assume 1 unit used per day
+                inventory[item]['quantity'] = max(0, inventory[item]['quantity'])
         return inventory
 
     def clear_inventory(self, user_id):

@@ -6,13 +6,12 @@ from core.module_manager import ModuleManager
 from camera.camera_manager import CameraManager
 from ai.object_detection import ObjectDetector
 from inventory.inventory_manager import InventoryManager
-from recipes import find_matching_recipes
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
+from recipes import find_matching_recipes, find_recipes_by_ingredients, get_recipe_details, RecipeManager
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from models import db, User, InventoryItem
-from recipes.recipe_api import find_recipes_by_ingredients, get_recipe_details
+from models import db, User, InventoryItem, NutritionLog, HealthGoals
 from dotenv import load_dotenv
 from openai import OpenAI
 import io
@@ -21,6 +20,10 @@ from pydub.playback import play
 import requests
 import time
 from forms import UserPreferencesForm
+from datetime import datetime, timedelta
+from waste_prevention.food_waste_manager import FoodWasteManager
+from health.health_tracker import HealthTracker
+from datetime import datetime, timedelta
 
 # Ensure the src folder is added to Python's module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -51,6 +54,7 @@ db.init_app(app)  # Initialize the `db` instance
 migrate = Migrate(app, db)
 
 from models import User, InventoryItem
+
 
 # Create tables
 with app.app_context():
@@ -127,7 +131,7 @@ def setup_cameras():
 
 def generate_and_play_speech(text):
     response = client.audio.speech.create(
-        model="tts-1",
+        model="tts-1-hd",
         voice="alloy",
         input=text
     )
@@ -161,9 +165,9 @@ def get_nutritional_info(food_item, portion_size):
         print(f"Error getting nutritional info: {response.status_code}, {response.text}")
         return None
 
-# Initialize modules
+# Where we initialize other modules
 module_manager = ModuleManager()
-camera_manager = setup_cameras()  # Use the new setup_cameras function
+camera_manager = setup_cameras()
 inventory_manager = InventoryManager()
 
 # Setup object detection
@@ -174,10 +178,27 @@ print(f"Config path: {config_path}")
 print(f"Classes path: {classes_path}")
 object_detector = ObjectDetector(weights_path, config_path, classes_path)
 
+# Initialize health tracker with other modules
+health_tracker = HealthTracker(inventory_manager)
+module_manager.register_module('health_tracker', health_tracker)
+
+class RecipeAPI:
+    def __init__(self):
+        self.find_recipes_by_ingredients = find_recipes_by_ingredients
+        self.get_recipe_details = get_recipe_details
+
+recipe_api = RecipeAPI()
+recipe_manager = RecipeManager(recipe_api)
+
+# Initialize food waste manager
+food_waste_manager = FoodWasteManager(inventory_manager)
+
 # Register modules
 module_manager.register_module('camera', camera_manager)
 module_manager.register_module('object_detector', object_detector)
 module_manager.register_module('inventory', inventory_manager)
+module_manager.register_module('food_waste', food_waste_manager)
+module_manager.register_module('recipe_manager', recipe_manager)
 
 @app.route('/capture', methods=['POST'])
 @login_required
@@ -231,6 +252,165 @@ def detect_objects():
     else:
         return jsonify({"error": "No image available for detection"})
 
+@app.route('/health-dashboard')
+@login_required
+def health_dashboard():
+    return render_template('health_dashboard.html')
+
+@app.route('/health/daily-summary')
+@login_required
+def get_daily_summary():
+    date = request.args.get('date', datetime.now().date().isoformat())
+    
+    # Get logs from database
+    logs = NutritionLog.query.filter_by(
+        user_id=current_user.id,
+        date=datetime.fromisoformat(date).date()
+    ).all()
+    
+    # Get user's goals
+    goals = HealthGoals.query.filter_by(user_id=current_user.id).first()
+    
+    summary = {
+        'total_nutrients': {
+            'calories': sum(log.calories or 0 for log in logs),
+            'protein': sum(log.protein or 0 for log in logs),
+            'carbs': sum(log.carbs or 0 for log in logs),
+            'fat': sum(log.fat or 0 for log in logs),
+            'fiber': sum(log.fiber or 0 for log in logs)
+        },
+        'items': [{
+            'item': log.item_name,
+            'quantity': log.quantity,
+            'time': log.timestamp.isoformat()
+        } for log in logs],
+        'goals': {
+            'calories': goals.calorie_goal if goals else None,
+            'protein': goals.protein_goal if goals else None,
+            'carbs': goals.carb_goal if goals else None,
+            'fat': goals.fat_goal if goals else None,
+            'fiber': goals.fiber_goal if goals else None
+        }
+    }
+    
+    return jsonify(summary)
+
+@app.route('/health/weekly-summary')
+@login_required
+def get_weekly_summary():
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=7)
+    
+    logs = NutritionLog.query.filter(
+        NutritionLog.user_id == current_user.id,
+        NutritionLog.date >= start_date,
+        NutritionLog.date <= end_date
+    ).all()
+    
+    # Group logs by date
+    daily_totals = {}
+    for log in logs:
+        date_str = log.date.isoformat()
+        if date_str not in daily_totals:
+            daily_totals[date_str] = {
+                'calories': 0,
+                'protein': 0,
+                'carbs': 0,
+                'fat': 0,
+                'fiber': 0
+            }
+        
+        daily_totals[date_str]['calories'] += log.calories or 0
+        daily_totals[date_str]['protein'] += log.protein or 0
+        daily_totals[date_str]['carbs'] += log.carbs or 0
+        daily_totals[date_str]['fat'] += log.fat or 0
+        daily_totals[date_str]['fiber'] += log.fiber or 0
+    
+    # Format for chart display
+    summary = {
+        'days': [
+            {
+                'date': date,
+                'nutrients': nutrients
+            }
+            for date, nutrients in daily_totals.items()
+        ]
+    }
+    
+    return jsonify(summary)
+
+@app.route('/health/log-consumption', methods=['POST'])
+@login_required
+def log_consumption():
+    data = request.json
+    item_name = data.get('item')
+    quantity = data.get('quantity')
+    
+    if not item_name or not quantity:
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    # Get item's nutritional info from inventory
+    inventory = inventory_manager.get_inventory(current_user.id)
+    if item_name not in inventory:
+        return jsonify({'error': 'Item not found in inventory'}), 404
+        
+    item_details = inventory[item_name]
+    nutritional_info = item_details.get('nutritional_info', {})
+    
+    # Create log entry
+    log = NutritionLog(
+        user_id=current_user.id,
+        date=datetime.now().date(),
+        item_name=item_name,
+        quantity=quantity,
+        calories=nutritional_info.get('nf_calories', 0) * quantity,
+        protein=nutritional_info.get('nf_protein', 0) * quantity,
+        carbs=nutritional_info.get('nf_total_carbohydrate', 0) * quantity,
+        fat=nutritional_info.get('nf_total_fat', 0) * quantity,
+        fiber=nutritional_info.get('nf_dietary_fiber', 0) * quantity
+    )
+    
+    db.session.add(log)
+    db.session.commit()
+    
+    # Update inventory quantity
+    inventory_manager.remove_item(current_user.id, item_name, quantity)
+    
+    return jsonify({'success': True})
+
+@app.route('/health/goals', methods=['GET', 'POST'])
+@login_required
+def manage_health_goals():
+    if request.method == 'POST':
+        data = request.json
+        goals = HealthGoals.query.filter_by(user_id=current_user.id).first()
+        
+        if not goals:
+            goals = HealthGoals(user_id=current_user.id)
+            db.session.add(goals)
+            
+        goals.calorie_goal = data.get('calories')
+        goals.protein_goal = data.get('protein')
+        goals.carb_goal = data.get('carbs')
+        goals.fat_goal = data.get('fat')
+        goals.fiber_goal = data.get('fiber')
+        goals.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        return jsonify({'success': True})
+        
+    else:
+        goals = HealthGoals.query.filter_by(user_id=current_user.id).first()
+        if goals:
+            return jsonify({
+                'calories': goals.calorie_goal,
+                'protein': goals.protein_goal,
+                'carbs': goals.carb_goal,
+                'fat': goals.fat_goal,
+                'fiber': goals.fiber_goal
+            })
+        return jsonify({})
+
 @app.route('/preferences', methods=['GET', 'POST'])
 @login_required
 def user_preferences():
@@ -259,9 +439,18 @@ def chat():
     chat_history = request.json.get('history', [])
     inventory = inventory_manager.get_inventory(current_user.id)
     
-    # Prepare the messages for the GPT model
+    # Create a string with user preferences and nutritional goals
+    user_context = f"The user's dietary preference is {current_user.dietary_preference or 'not set'}. "
+    user_context += f"Their daily nutritional goals are: Calories: {current_user.calorie_goal or 'not set'}, "
+    user_context += f"Protein: {current_user.protein_goal or 'not set'}g, "
+    user_context += f"Carbs: {current_user.carb_goal or 'not set'}g, "
+    user_context += f"Fat: {current_user.fat_goal or 'not set'}g."
+    
+    # Prepare the messages for the GPT model, including user preferences and goals
     messages = [
-        {"role": "system", "content": "You are a helpful kitchen assistant for a smart fridge. You can provide recipe suggestions, nutritional information, and general cooking advice based on the user's inventory."},
+        {"role": "system", "content": "You are a helpful kitchen assistant for a smart fridge. "
+                                      "You can provide recipe suggestions, nutritional information, and general cooking advice "
+                                      "based on the user's inventory, dietary preferences, and nutritional goals. " + user_context},
         {"role": "system", "content": f"The current inventory is: {inventory}"},
     ] + chat_history + [{"role": "user", "content": message}]
     
@@ -357,6 +546,80 @@ def get_expiring_soon():
     expiring_items = inventory_manager.get_expiring_soon(current_user.id, days)
     return jsonify(expiring_items)
 
+@app.route('/inventory_trends')
+@login_required
+def inventory_trends():
+    # Simulate data for the last 7 days
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=7)
+    dates = [start_date + timedelta(days=i) for i in range(8)]
+    
+    # Get inventory data for each day
+    trends = {}
+    for date in dates:
+        inventory = inventory_manager.get_inventory(current_user.id, date)
+        for item, details in inventory.items():
+            if item not in trends:
+                trends[item] = []
+            trends[item].append({'date': date.strftime('%Y-%m-%d'), 'quantity': details['quantity']})
+    
+    return jsonify(trends)
+
+@app.route('/waste-prevention')
+@login_required
+def waste_prevention_dashboard():
+    return render_template('waste_prevention.html', username=current_user.username)
+
+@app.route('/api/waste-analysis')
+@login_required
+def get_waste_analysis():
+    waste_manager = module_manager.get_module('food_waste')
+    analysis = waste_manager.analyze_waste_risk(current_user.id)
+    suggestions = waste_manager.get_waste_prevention_suggestions(current_user.id)
+    return jsonify({
+        'analysis': analysis,
+        'suggestions': suggestions
+    })
+
+
+@app.route('/advanced-recipe-search')
+@login_required
+def advanced_recipe_search():
+    return render_template('advanced_recipe_search.html')
+
+@app.route('/api/search-recipes', methods=['POST'])
+@login_required
+def search_recipes():
+    data = request.json
+    print(f"Received search data: {data}")  # Debug print
+    
+    recipe_manager = module_manager.get_module('recipe_manager')
+    
+    try:
+        recipes = recipe_manager.search_recipes(
+            ingredients=data.get('ingredients'),
+            dietary_restrictions=data.get('dietary_restrictions'),
+            max_cooking_time=data.get('max_cooking_time'),
+            nutrition_requirements=data.get('nutrition_requirements'),
+            difficulty_level=data.get('difficulty_level')
+        )
+        print(f"Found recipes: {recipes}")  # Debug print
+        
+        if current_user.calorie_goal or current_user.protein_goal:
+            recipes = recipe_manager.filter_by_health_goals(
+                recipes,
+                calorie_target=current_user.calorie_goal,
+                protein_target=current_user.protein_goal,
+                carb_target=current_user.carb_goal,
+                fat_target=current_user.fat_goal
+            )
+            print(f"After health goal filtering: {recipes}")  # Debug print
+        
+        return jsonify(recipes)
+    except Exception as e:
+        print(f"Error in recipe search: {str(e)}")  # Debug print
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/update-expiry', methods=['POST'])
 @login_required
 def update_expiry():
@@ -368,26 +631,129 @@ def update_expiry():
         return jsonify({"message": f"Expiry date for {item_name} updated"})
     return jsonify({"error": "Invalid data"}), 400
 
+@app.route('/generate_shopping_list')
+@login_required
+def generate_shopping_list():
+    meal_plan = get_meal_plan()
+    print(f"Generating shopping list for meal plan: {meal_plan}")  # Debug print
+    inventory = inventory_manager.get_inventory(current_user.id)
+    print(f"Current inventory: {inventory}")  # Debug print
+    
+    shopping_list = {}
+    for day, meals in meal_plan.items():
+        for meal, recipe_id in meals.items():
+            if recipe_id:
+                recipe = get_recipe_details(recipe_id)
+                print(f"Recipe details for {recipe_id}: {recipe}")  # Debug print
+                if recipe and isinstance(recipe, dict) and 'extendedIngredients' in recipe:
+                    for ingredient in recipe['extendedIngredients']:
+                        name = ingredient['name']
+                        amount = ingredient.get('amount', 0)
+                        unit = ingredient.get('unit', '')
+                        if name not in inventory or inventory[name]['quantity'] < amount:
+                            if name not in shopping_list:
+                                shopping_list[name] = {'amount': 0, 'unit': unit}
+                            shopping_list[name]['amount'] += amount
+                else:
+                    print(f"Couldn't get details for recipe {recipe_id}")
+    
+    print(f"Generated shopping list: {shopping_list}")  # Debug print
+    if not shopping_list:
+        return jsonify({"message": "No items needed for the current meal plan."})
+    return jsonify(shopping_list)
+
+@app.route('/save_meal_plan', methods=['POST'])
+@login_required
+def save_meal_plan():
+    meal_plan = request.json
+    session['current_meal_plan'] = meal_plan
+    print(f"Saving meal plan for user {current_user.id}: {meal_plan}")
+    return jsonify({"message": "Meal plan saved successfully"})
+
+@app.route('/get_meal_plan')
+@login_required
+def get_meal_plan():
+    return session.get('current_meal_plan', {
+        "Monday": {"breakfast": None, "lunch": None, "dinner": None},
+        "Tuesday": {"breakfast": None, "lunch": None, "dinner": None},
+        "Wednesday": {"breakfast": None, "lunch": None, "dinner": None},
+        "Thursday": {"breakfast": None, "lunch": None, "dinner": None},
+        "Friday": {"breakfast": None, "lunch": None, "dinner": None},
+        "Saturday": {"breakfast": None, "lunch": None, "dinner": None},
+        "Sunday": {"breakfast": None, "lunch": None, "dinner": None}
+    })
+
 @app.route('/suggest_recipes')
 @login_required
 def suggest_recipes():
-    # Use the inventory_manager to get the inventory instead of querying the database directly
     inventory = inventory_manager.get_inventory(current_user.id)
     available_ingredients = list(inventory.keys())
-    print(f"Available ingredients: {available_ingredients}")  # Debug print
     
     if not available_ingredients:
-        print("No ingredients in inventory")
         return jsonify({"message": "No ingredients in inventory. Please add some items to your inventory first."}), 404
     
-    recipes = find_recipes_by_ingredients(available_ingredients)
-    print(f"API response: {recipes}")  # Debug print
+    recipes = find_recipes_by_ingredients(available_ingredients, current_user.dietary_preference)
     
     if recipes:
-        return jsonify(recipes)
+        # Simplify the recipe data to include only essential information
+        simplified_recipes = [
+            {
+                "id": recipe.get("id"),
+                "title": recipe.get("title"),
+                "image": recipe.get("image"),
+                "usedIngredientCount": recipe.get("usedIngredientCount"),
+                "missedIngredientCount": recipe.get("missedIngredientCount")
+            }
+            for recipe in recipes
+        ]
+        return jsonify(simplified_recipes)
     else:
-        print("No recipes found or an error occurred")  # Debug print
         return jsonify({"message": "No recipes found. Try adding more ingredients or try again later."}), 404
+
+@app.route('/recipe_details/<int:recipe_id>')
+@login_required
+def get_recipe_details(recipe_id):
+    try:
+        recipe_manager = module_manager.get_module('recipe_manager')
+        details = recipe_manager.get_recipe_details(recipe_id)
+        
+        if 'error' in details:
+            return jsonify(details), 400
+            
+        simplified_details = {
+            'title': details.get('title', 'Unknown Recipe'),
+            'image': details.get('image', ''),
+            'readyInMinutes': details.get('readyInMinutes', 'undefined'),
+            'servings': details.get('servings', 'Not specified'),
+            'instructions': [],
+            'ingredients': [],
+            'nutrition': details.get('nutrition', {})
+        }
+        
+        # Extract instructions
+        if 'analyzedInstructions' in details and details['analyzedInstructions']:
+            simplified_details['instructions'] = [
+                step['step'] for step in details['analyzedInstructions'][0].get('steps', [])
+            ]
+            
+        # Extract ingredients
+        if 'extendedIngredients' in details:
+            simplified_details['ingredients'] = [
+                ingredient.get('original', '') for ingredient in details['extendedIngredients']
+            ]
+            
+        return jsonify(simplified_details)
+        
+    except Exception as e:
+        print(f"Error processing recipe details: {e}")
+        return jsonify({
+            'error': 'Failed to load recipe details',
+            'message': str(e)
+        }), 500
+
+
+
+
 
 if __name__ == '__main__':
     if not os.path.exists(app.static_folder):

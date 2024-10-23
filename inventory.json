@@ -60,9 +60,9 @@
   "1": {
     "banana": {
       "quantity": 1,
-      "expiry_date": "2024-10-04",
-      "added_date": "2024-10-04T00:47:37.327136",
-      "last_detected": "2024-10-04T00:47:37.327140",
+      "expiry_date": "2024-10-28T16:03:54.163584",
+      "added_date": "2024-10-23T16:03:54.163916",
+      "last_detected": "2024-10-23T16:03:54.163919",
       "category": "fruits",
       "portion_size": "large",
       "nutritional_info": {
@@ -513,7 +513,7 @@
         "nix_item_name": null,
         "nix_item_id": null,
         "upc": null,
-        "consumed_at": "2024-10-04T00:47:35+00:00",
+        "consumed_at": "2024-10-23T16:03:52+00:00",
         "metadata": {
           "is_raw_food": false
         },
@@ -528,39 +528,9 @@
         },
         "alt_measures": [
           {
-            "serving_weight": 126,
-            "measure": "NLEA serving",
-            "seq": 8,
-            "qty": 1
-          },
-          {
-            "serving_weight": 152,
-            "measure": "extra large (9\" or longer)",
-            "seq": 7,
-            "qty": 1
-          },
-          {
-            "serving_weight": 136,
-            "measure": "large (8\" to 8-7/8\" long)",
-            "seq": 6,
-            "qty": 1
-          },
-          {
-            "serving_weight": 118,
-            "measure": "medium (7\" to 7-7/8\" long)",
-            "seq": 5,
-            "qty": 1
-          },
-          {
-            "serving_weight": 101,
-            "measure": "small (6\" to 6-7/8\" long)",
-            "seq": 4,
-            "qty": 1
-          },
-          {
-            "serving_weight": 81,
-            "measure": "extra small (less than 6\" long)",
-            "seq": 3,
+            "serving_weight": 225,
+            "measure": "cup, mashed",
+            "seq": 1,
             "qty": 1
           },
           {
@@ -570,9 +540,39 @@
             "qty": 1
           },
           {
-            "serving_weight": 225,
-            "measure": "cup, mashed",
-            "seq": 1,
+            "serving_weight": 81,
+            "measure": "extra small (less than 6\" long)",
+            "seq": 3,
+            "qty": 1
+          },
+          {
+            "serving_weight": 101,
+            "measure": "small (6\" to 6-7/8\" long)",
+            "seq": 4,
+            "qty": 1
+          },
+          {
+            "serving_weight": 118,
+            "measure": "medium (7\" to 7-7/8\" long)",
+            "seq": 5,
+            "qty": 1
+          },
+          {
+            "serving_weight": 136,
+            "measure": "large (8\" to 8-7/8\" long)",
+            "seq": 6,
+            "qty": 1
+          },
+          {
+            "serving_weight": 152,
+            "measure": "extra large (9\" or longer)",
+            "seq": 7,
+            "qty": 1
+          },
+          {
+            "serving_weight": 126,
+            "measure": "NLEA serving",
+            "seq": 8,
             "qty": 1
           },
           {
@@ -590,7 +590,7 @@
         ],
         "lat": null,
         "lng": null,
-        "meal_type": 5,
+        "meal_type": 3,
         "photo": {
           "thumb": "https://nix-tag-images.s3.amazonaws.com/399_thumb.jpg",
           "highres": "https://nix-tag-images.s3.amazonaws.com/399_highres.jpg",
@@ -604,18 +604,18 @@
     },
     "bowl": {
       "quantity": 4,
-      "expiry_date": "2024-10-11T00:47:37.629314",
-      "added_date": "2024-10-04T00:47:37.629333",
-      "last_detected": "2024-10-04T00:47:37.643441",
+      "expiry_date": "2024-10-30T16:03:54.488083",
+      "added_date": "2024-10-23T16:03:54.488097",
+      "last_detected": "2024-10-23T16:03:54.505531",
       "category": "non_food",
       "portion_size": "large",
       "nutritional_info": null
     },
     "carrot": {
       "quantity": 1,
-      "expiry_date": "2024-10-11T00:47:37.631658",
-      "added_date": "2024-10-04T00:47:37.631669",
-      "last_detected": "2024-10-04T00:47:37.631672",
+      "expiry_date": "2024-10-30T16:03:54.489657",
+      "added_date": "2024-10-23T16:03:54.489667",
+      "last_detected": "2024-10-23T16:03:54.489669",
       "category": "vegetables",
       "portion_size": "large",
       "nutritional_info": {
@@ -1102,7 +1102,7 @@
         "nix_item_name": null,
         "nix_item_id": null,
         "upc": null,
-        "consumed_at": "2024-10-04T00:47:36+00:00",
+        "consumed_at": "2024-10-23T16:03:52+00:00",
         "metadata": {
           "is_raw_food": false
         },
@@ -1117,9 +1117,9 @@
         },
         "alt_measures": [
           {
-            "serving_weight": 46,
-            "measure": "carrot",
-            "seq": 3,
+            "serving_weight": 9.7,
+            "measure": "tbsp",
+            "seq": 1,
             "qty": 1
           },
           {
@@ -1129,9 +1129,9 @@
             "qty": 0.5
           },
           {
-            "serving_weight": 9.7,
-            "measure": "tbsp",
-            "seq": 1,
+            "serving_weight": 46,
+            "measure": "carrot",
+            "seq": 3,
             "qty": 1
           },
           {
@@ -1161,7 +1161,7 @@
         ],
         "lat": null,
         "lng": null,
-        "meal_type": 5,
+        "meal_type": 3,
         "photo": {
           "thumb": "https://nix-tag-images.s3.amazonaws.com/452_thumb.jpg",
           "highres": "https://nix-tag-images.s3.amazonaws.com/452_highres.jpg",
@@ -1175,9 +1175,9 @@
     },
     "orange": {
       "quantity": 1,
-      "expiry_date": "2024-10-11T00:47:37.636439",
-      "added_date": "2024-10-04T00:47:37.636448",
-      "last_detected": "2024-10-04T00:47:37.636449",
+      "expiry_date": "2024-10-30T16:03:54.496896",
+      "added_date": "2024-10-23T16:03:54.496908",
+      "last_detected": "2024-10-23T16:03:54.496911",
       "category": "fruits",
       "portion_size": "large",
       "nutritional_info": {
@@ -1556,7 +1556,7 @@
         "nix_item_name": null,
         "nix_item_id": null,
         "upc": null,
-        "consumed_at": "2024-10-04T00:47:36+00:00",
+        "consumed_at": "2024-10-23T16:03:53+00:00",
         "metadata": {
           "is_raw_food": false
         },
@@ -1571,9 +1571,9 @@
         },
         "alt_measures": [
           {
-            "serving_weight": 154,
-            "measure": "NLEA serving",
-            "seq": 3,
+            "serving_weight": 165,
+            "measure": "cup sections, without membranes",
+            "seq": 1,
             "qty": 1
           },
           {
@@ -1583,9 +1583,9 @@
             "qty": 1
           },
           {
-            "serving_weight": 165,
-            "measure": "cup sections, without membranes",
-            "seq": 1,
+            "serving_weight": 154,
+            "measure": "NLEA serving",
+            "seq": 3,
             "qty": 1
           },
           {
@@ -1627,7 +1627,7 @@
         ],
         "lat": null,
         "lng": null,
-        "meal_type": 5,
+        "meal_type": 3,
         "photo": {
           "thumb": "https://nix-tag-images.s3.amazonaws.com/719_thumb.jpg",
           "highres": "https://nix-tag-images.s3.amazonaws.com/719_highres.jpg",

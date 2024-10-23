@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Food Waste Prevention{% endblock %}
+
+{% block extra_css %}
+<style>
+    .risk-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+
+    .high-risk {
+        border-left: 5px solid #ff4444;
+    }
+
+    .medium-risk {
+        border-left: 5px solid #ffbb33;
+    }
+
+    .low-risk {
+        border-left: 5px solid #00C851;
+    }
+
+    .waste-prevention-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .suggestion-card {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .action-button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 2px;
+    }
+
+    .action-button:hover {
+        background-color: #45a049;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background-color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .chart-container {
+        width: 100%;
+        height: 300px;
+        margin: 20px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="waste-prevention-container">
+    <div class="at-risk-items">
+        <h2>Items at Risk</h2>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>High Risk</h3>
+                <p id="high-risk-count">0 items</p>
+            </div>
+            <div class="stat-card">
+                <h3>Medium Risk</h3>
+                <p id="medium-risk-count">0 items</p>
+            </div>
+            <div class="stat-card">
+                <h3>Low Risk</h3>
+                <p id="low-risk-count">0 items</p>
+            </div>
+        </div>
+        <div id="risk-items-container"></div>
+        <div class="chart-container">
+            <canvas id="wasteRiskChart"></canvas>
+        </div>
+    </div>
+
+    <div class="suggestions">
+        <h2>Waste Prevention Suggestions</h2>
+        <div id="suggestions-container"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateWastePreventionDashboard() {
+    fetch('/api/waste-analysis')
+        .then(response => response.json())
+        .then(data => {
+            updateRiskDisplay(data.analysis);
+            updateSuggestions(data.suggestions);
+            updateChart(data.analysis);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function updateRiskDisplay(analysis) {
+    const container = document.getElementById('risk-items-container');
+    container.innerHTML = '';
+    
+    // Update stat counts
+    document.getElementById('high-risk-count').textContent = 
+        `${analysis.high_risk.length} items`;
+    document.getElementById('medium-risk-count').textContent = 
+        `${analysis.medium_risk.length} items`;
+    document.getElementById('low-risk-count').textContent = 
+        `${analysis.low_risk.length} items`;
+
+    // Create risk cards
+    Object.entries(analysis).forEach(([risk_level, items]) => {
+        if (items.length > 0) {
+            const riskCard = document.createElement('div');
+            riskCard.className = `risk-card ${risk_level}`;
+            
+            const title = document.createElement('h3');
+            title.textContent = `${risk_level.replace('_', ' ').toUpperCase()}`;
+            riskCard.appendChild(title);
+
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item-entry';
+                itemDiv.innerHTML = `
+                    <p>${item.item} - ${item.days_left} days left 
+                    (Quantity: ${item.quantity})</p>
+                    <button onclick="findRecipes('${item.item}')" 
+                    class="action-button">Find Recipes</button>
+                `;
+                riskCard.appendChild(itemDiv);
+            });
+
+            container.appendChild(riskCard);
+        }
+    });
+}
+
+function updateSuggestions(suggestions) {
+    const container = document.getElementById('suggestions-container');
+    container.innerHTML = '';
+
+    suggestions.forEach(suggestion => {
+        const card = document.createElement('div');
+        card.className = `suggestion-card ${suggestion.priority}-risk`;
+        
+        card.innerHTML = `
+            <h3>${suggestion.message}</h3>
+            <ul>
+                ${suggestion.items.map(item => 
+                    `<li>${item.item} (${item.days_left} days left)</li>`
+                ).join('')}
+            </ul>
+            <div class="actions">
+                <h4>Recommended Actions:</h4>
+                ${suggestion.actions.map(action => 
+                    `<button class="action-button">${action}</button>`
+                ).join('')}
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+function updateChart(analysis) {
+    const ctx = document.getElementById('wasteRiskChart').getContext('2d');
+    
+    // Aggregate data for the chart
+    const data = {
+        labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+        datasets: [{
+            data: [
+                analysis.high_risk.length,
+                analysis.medium_risk.length,
+                analysis.low_risk.length
+            ],
+            backgroundColor: ['#ff4444', '#ffbb33', '#00C851']
+        }]
+    };
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Items at Risk of Waste'
+                }
+            }
+        }
+    });
+}
+
+function findRecipes(ingredient) {
+    // Redirect to recipe suggestions with this ingredient
+    window.location.href = `/suggest_recipes?ingredient=${encodeURIComponent(ingredient)}`;
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    updateWastePreventionDashboard();
+    // Refresh every 5 minutes
+    setInterval(updateWastePreventionDashboard, 300000);
+});
+</script>
+{% endblock %}
