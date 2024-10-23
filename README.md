@@ -160,14 +160,3 @@ For support, please open an issue in the GitHub repository.
 Please note that this project is for educational purposes. In a production environment, additional security measures should be implemented.
 
 ```
-
-This README:
-1. Clearly describes the project and its features
-2. Provides detailed setup instructions
-3. Lists all required API keys
-4. Explains the project structure
-5. Details known issues and future plans
-6. Includes contribution guidelines
-7. Acknowledges used technologies
-
-Would you like me to add or modify any section?
