@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-6">Create New Family Group</h2>
+    
+    <form method="POST" class="space-y-6">
+        {{ form.hidden_tag() }}
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700">{{ form.name.label }}</label>
+            {{ form.name(class="mt-1 block w-full rounded border-gray-300 shadow-sm") }}
+            {% if form.name.errors %}
+                {% for error in form.name.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">{{ form.shopping_day.label }}</label>
+            {{ form.shopping_day(class="mt-1 block w-full rounded border-gray-300 shadow-sm") }}
+            {% if form.shopping_day.errors %}
+                {% for error in form.shopping_day.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">{{ form.budget.label }}</label>
+            {{ form.budget(class="mt-1 block w-full rounded border-gray-300 shadow-sm") }}
+            {% if form.budget.errors %}
+                {% for error in form.budget.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="flex justify-end">
+            {{ form.submit(class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

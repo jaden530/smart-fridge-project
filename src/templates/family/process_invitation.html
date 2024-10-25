@@ -1,0 +1,29 @@
+<!-- templates/family/process_invitation.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6">Family Invitation</h1>
+        
+        <div class="mb-8">
+            <p class="mb-4">You've been invited to join <strong>{{ invitation.family.name }}</strong> by {{ invitation.inviter.username }}.</p>
+            
+            {% if invitation.status == 'pending' %}
+                <form method="POST" class="space-x-4">
+                    <button type="submit" name="accept" value="true" 
+                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Accept Invitation
+                    </button>
+                    <button type="submit" name="accept" value="false" 
+                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                        Decline Invitation
+                    </button>
+                </form>
+            {% else %}
+                <p class="text-gray-600">This invitation has already been {{ invitation.status }}.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

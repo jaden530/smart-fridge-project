@@ -6,3 +6,4 @@ __pycache__/
 captured_images/
 inventory.json
 .env
+/static

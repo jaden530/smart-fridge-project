@@ -3,6 +3,7 @@ import os
 import urllib.request
 import cv2
 from core.module_manager import ModuleManager
+from core.family_manager import FamilyManager
 from camera.camera_manager import CameraManager
 from ai.object_detection import ObjectDetector
 from inventory.inventory_manager import InventoryManager
@@ -11,7 +12,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, f
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from models import db, User, InventoryItem, NutritionLog, HealthGoals
+from models import db, User, InventoryItem, NutritionLog, HealthGoals, Family, FamilyMember, FamilyInvitation
 from dotenv import load_dotenv
 from openai import OpenAI
 import io
@@ -19,30 +20,95 @@ from pydub import AudioSegment
 from pydub.playback import play
 import requests
 import time
-from forms import UserPreferencesForm
+from forms import UserPreferencesForm, CreateFamilyForm, InviteFamilyMemberForm, UpdateFamilySettingsForm, UpdateMemberPermissionsForm
 from datetime import datetime, timedelta
 from waste_prevention.food_waste_manager import FoodWasteManager
 from health.health_tracker import HealthTracker
-from datetime import datetime, timedelta
+from assistant.kitchen_assistant import KitchenAssistant
 
 # Ensure the src folder is added to Python's module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+def download_file(url, file_name):
+    if not os.path.exists(file_name):
+        urllib.request.urlretrieve(url, file_name)
+
+def setup_object_detection():
+    model_dir = os.path.join(os.getcwd(), 'model_data')
+    os.makedirs(model_dir, exist_ok=True)
+    
+    weights_path = os.path.join(model_dir, "yolov3.weights")
+    config_path = os.path.join(model_dir, "yolov3.cfg")
+    classes_path = os.path.join(model_dir, "coco.names")
+    
+    download_file("https://pjreddie.com/media/files/yolov3.weights", weights_path)
+    download_file("https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg", config_path)
+    download_file("https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names", classes_path)
+    
+    return weights_path, config_path, classes_path
+
+def setup_cameras():
+    camera_manager = CameraManager()
+    camera_manager.add_camera('main', 'https://media.gettyimages.com/id/2151094361/photo/healthy-rainbow-colored-fruits-and-vegetables-background.webp?s=2048x2048&w=gi&k=20&c=eW6_Tp52NF3I_JJhYoFanTk9F72K8y_ngxkhyZMNLYI=')
+    return camera_manager
+
+# Load environment variables
+load_dotenv()
+
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 NUTRITIONIX_APP_ID = os.getenv('NUTRITIONIX_APP_ID')
 NUTRITIONIX_API_KEY = os.getenv('NUTRITIONIX_API_KEY')
 
-load_dotenv()  # This loads the variables from .env
-
+# Setup paths
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_folder = os.path.join(base_dir, 'static')
-
-# Define the path to your database file
 db_path = os.path.join(base_dir, 'smartfridge.db')
 
+# Clean up old database if it exists
 if os.path.exists(db_path):
     os.remove(db_path)
     print("Existing database deleted.")
+
+# Initialize all managers and modules
+module_manager = ModuleManager()
+camera_manager = setup_cameras()
+inventory_manager = InventoryManager()
+family_manager = FamilyManager()
+
+
+# Setup object detection
+print(f"Current working directory: {os.getcwd()}")
+weights_path, config_path, classes_path = setup_object_detection()
+object_detector = ObjectDetector(weights_path, config_path, classes_path)
+
+# Initialize other components
+health_tracker = HealthTracker(inventory_manager)
+food_waste_manager = FoodWasteManager(inventory_manager)
+
+
+
+class RecipeAPI:
+    def __init__(self):
+        self.find_recipes_by_ingredients = find_recipes_by_ingredients
+        self.get_recipe_details = get_recipe_details
+
+recipe_api = RecipeAPI()
+recipe_manager = RecipeManager(recipe_api)
+kitchen_assistant = KitchenAssistant(inventory_manager, recipe_manager)
+
+# Register all modules
+module_manager.register_module('camera', camera_manager)
+module_manager.register_module('object_detector', object_detector)
+module_manager.register_module('inventory', inventory_manager)
+module_manager.register_module('food_waste', food_waste_manager)
+module_manager.register_module('recipe_manager', recipe_manager)
+module_manager.register_module('family', family_manager)
+module_manager.register_module('health_tracker', health_tracker)
+
+# Initialize Flask app
+app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
+
 
 app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback_secret_key_for_development')
@@ -165,10 +231,6 @@ def get_nutritional_info(food_item, portion_size):
         print(f"Error getting nutritional info: {response.status_code}, {response.text}")
         return None
 
-# Where we initialize other modules
-module_manager = ModuleManager()
-camera_manager = setup_cameras()
-inventory_manager = InventoryManager()
 
 # Setup object detection
 print(f"Current working directory: {os.getcwd()}")
@@ -445,15 +507,56 @@ def chat():
     user_context += f"Protein: {current_user.protein_goal or 'not set'}g, "
     user_context += f"Carbs: {current_user.carb_goal or 'not set'}g, "
     user_context += f"Fat: {current_user.fat_goal or 'not set'}g."
+
+    # Create teaching context based on message intent
+    teaching_context = ""
+    if any(word in message.lower() for word in ['how to', 'teach me', 'show me', 'explain']):
+        teaching_context = """
+        When explaining cooking techniques or steps:
+        1. Break down complex actions into simple steps
+        2. Mention safety precautions when relevant
+        3. Explain why certain techniques are used
+        4. Provide alternative methods when available
+        5. Include tips for better results
+        """
+
+    # Enhanced system prompt for more engaging responses
+    system_prompt = """
+    You are a friendly and knowledgeable kitchen assistant. You love to cook and teach cooking skills. 
+    Your goal is to be both helpful and educational, like a patient friend teaching in the kitchen.
+
+    When giving instructions:
+    - Be encouraging and supportive
+    - Explain the 'why' behind cooking steps
+    - Offer tips and tricks naturally in conversation
+    - Share relevant food science when it helps understanding
+    - Point out common mistakes to avoid
+    - Suggest variations or alternatives when relevant
+
+    Remember to:
+    - Keep safety in mind
+    - Be conversational and engaging
+    - Use clear, simple language
+    - Break down complex techniques
+    - Acknowledge user's skill level
+    """
     
-    # Prepare the messages for the GPT model, including user preferences and goals
+    # Prepare the messages for the GPT model
     messages = [
-        {"role": "system", "content": "You are a helpful kitchen assistant for a smart fridge. "
-                                      "You can provide recipe suggestions, nutritional information, and general cooking advice "
-                                      "based on the user's inventory, dietary preferences, and nutritional goals. " + user_context},
-        {"role": "system", "content": f"The current inventory is: {inventory}"},
-    ] + chat_history + [{"role": "user", "content": message}]
+        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": f"Additional Context: {user_context}"},
+        {"role": "system", "content": f"Current Inventory: {inventory}"},
+    ]
+
+    # Add teaching context if relevant
+    if teaching_context:
+        messages.append({"role": "system", "content": teaching_context})
+
+    # Add chat history and current message
+    messages.extend(chat_history)
+    messages.append({"role": "user", "content": message})
     
+    # Get response from GPT
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages
@@ -473,12 +576,163 @@ def chat():
     audio_path = os.path.join(app.static_folder, audio_filename)
     with open(audio_path, "wb") as f:
         f.write(speech_response.content)
+
+    # Analyze response for UI enhancements
+    response_analysis = {
+        "has_safety_tip": any(word in assistant_response.lower() for word in ['caution', 'careful', 'warning', 'safety', 'danger']),
+        "has_technique": any(word in assistant_response.lower() for word in ['technique', 'method', 'step-by-step', 'procedure']),
+        "has_suggestion": any(word in assistant_response.lower() for word in ['try', 'suggest', 'recommend', 'might want to']),
+    }
     
     return jsonify({
         "response": assistant_response,
-        "audio_url": f"/static/{audio_filename}"
+        "audio_url": f"/static/{audio_filename}",
+        "response_type": response_analysis,
+        "should_demonstrate": "show" in message.lower() or "demonstrate" in message.lower()
     })
         
+@app.route('/family/create', methods=['GET', 'POST'])
+@login_required
+def create_family():
+    form = CreateFamilyForm()
+    if form.validate_on_submit():
+        try:
+            family = family_manager.create_family(
+                name=form.name.data,
+                creator=current_user,
+                shopping_day=form.shopping_day.data,
+                budget=form.get_budget()  # Use the new method here
+            )
+            flash(f'Family "{family.name}" created successfully!', 'success')
+            return redirect(url_for('family_dashboard', family_id=family.id))
+        except Exception as e:
+            flash(f'Error creating family: {str(e)}', 'error')
+    return render_template('family/create_family.html', form=form)
+
+@app.route('/family/<int:family_id>/dashboard')
+@login_required
+def family_dashboard(family_id):
+    family = Family.query.get_or_404(family_id)
+    member = FamilyMember.query.filter_by(
+        family_id=family_id,
+        user_id=current_user.id
+    ).first_or_404()
+    
+    members = family_manager.get_family_members(family_id)
+    return render_template('family/dashboard.html',
+                         family=family,
+                         members=members,
+                         current_member=member)
+
+@app.route('/family/<int:family_id>/invite', methods=['GET', 'POST'])
+@login_required
+def invite_family_member(family_id):
+    member = FamilyMember.query.filter_by(
+        family_id=family_id,
+        user_id=current_user.id
+    ).first_or_404()
+    
+    if not member.can_invite_members:
+        flash('You do not have permission to invite members.', 'error')
+        return redirect(url_for('family_dashboard', family_id=family_id))
+    
+    form = InviteFamilyMemberForm()
+    if form.validate_on_submit():
+        try:
+            token = family_manager.invite_member(
+                family_id=family_id,
+                inviter_id=current_user.id,
+                invitee_email=form.email.data,
+                role=form.role.data
+            )
+            # Here you would typically send an email with the invitation link
+            flash(f'Invitation sent to {form.email.data}', 'success')
+            return redirect(url_for('family_dashboard', family_id=family_id))
+        except Exception as e:
+            flash(f'Error sending invitation: {str(e)}', 'error')
+    
+    return render_template('family/invite_member.html', form=form)
+
+@app.route('/family/invitation/<token>', methods=['GET', 'POST'])
+@login_required
+def process_invitation(token):
+    if request.method == 'POST':
+        accept = request.form.get('accept', 'false') == 'true'
+        success, message = family_manager.process_invitation(token, accept)
+        flash(message, 'success' if success else 'error')
+        if success and accept:
+            invitation = FamilyInvitation.query.filter_by(token=token).first()
+            return redirect(url_for('family_dashboard', family_id=invitation.family_id))
+    else:
+        invitation = FamilyInvitation.query.filter_by(token=token).first_or_404()
+        return render_template('family/process_invitation.html', invitation=invitation)
+    
+    return redirect(url_for('index'))
+
+@app.route('/family/<int:family_id>/settings', methods=['GET', 'POST'])
+@login_required
+def family_settings(family_id):
+    member = FamilyMember.query.filter_by(
+        family_id=family_id,
+        user_id=current_user.id
+    ).first_or_404()
+    
+    if member.role != 'admin':
+        flash('Only family admins can modify settings.', 'error')
+        return redirect(url_for('family_dashboard', family_id=family_id))
+    
+    family = Family.query.get_or_404(family_id)
+    form = UpdateFamilySettingsForm(obj=family)
+    
+    if form.validate_on_submit():
+        success, message = family_manager.update_family_settings(
+            family_id,
+            {
+                'name': form.name.data,
+                'shopping_day': form.shopping_day.data,
+                'budget': form.budget.data
+            }
+        )
+        flash(message, 'success' if success else 'error')
+        return redirect(url_for('family_dashboard', family_id=family_id))
+    
+    return render_template('family/settings.html', form=form, family=family)
+
+@app.route('/family/<int:family_id>/member/<int:user_id>/permissions', methods=['GET', 'POST'])
+@login_required
+def update_member_permissions(family_id, user_id):
+    admin_member = FamilyMember.query.filter_by(
+        family_id=family_id,
+        user_id=current_user.id
+    ).first_or_404()
+    
+    if admin_member.role != 'admin':
+        flash('Only family admins can modify member permissions.', 'error')
+        return redirect(url_for('family_dashboard', family_id=family_id))
+    
+    member = FamilyMember.query.filter_by(
+        family_id=family_id,
+        user_id=user_id
+    ).first_or_404()
+    
+    form = UpdateMemberPermissionsForm(obj=member)
+    
+    if form.validate_on_submit():
+        success, message = family_manager.update_member_permissions(
+            family_id,
+            user_id,
+            {
+                'role': form.role.data,
+                'can_edit_inventory': form.can_edit_inventory.data,
+                'can_edit_shopping_list': form.can_edit_shopping_list.data,
+                'can_invite_members': form.can_invite_members.data
+            }
+        )
+        flash(message, 'success' if success else 'error')
+        return redirect(url_for('family_dashboard', family_id=family_id))
+    
+    return render_template('family/member_permissions.html', form=form, member=member)
+
 @app.route('/voice_query', methods=['POST'])
 @login_required
 def voice_query():
@@ -681,6 +935,20 @@ def get_meal_plan():
         "Friday": {"breakfast": None, "lunch": None, "dinner": None},
         "Saturday": {"breakfast": None, "lunch": None, "dinner": None},
         "Sunday": {"breakfast": None, "lunch": None, "dinner": None}
+    })
+
+@app.route('/toggle_teaching_mode', methods=['POST'])
+@login_required
+def toggle_teaching_mode():
+    data = request.json
+    enabled = data.get('enabled', False)
+    
+    # Store the teaching mode state in the session
+    session['teaching_mode'] = enabled
+    
+    return jsonify({
+        "success": True,
+        "teaching_mode": enabled
     })
 
 @app.route('/suggest_recipes')

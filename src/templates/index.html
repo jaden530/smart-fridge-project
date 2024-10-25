@@ -1,206 +1,287 @@
-<<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Fridge</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .container {
-            display: flex;
-            justify-content: space-between;
-        }
-        .left-column, .right-column {
-            width: 48%;
-        }
-        #capturedImage {
-            max-width: 100%;
-            margin-top: 20px;
-        }
-        #detectedObjects {
-            margin-top: 20px;
-            display: none;
-        }
-        .category {
-            margin-bottom: 20px;
-        }
-        button {
-            margin-right: 10px;
-        }
-        .expiring-soon {
-            color: red;
-            font-weight: bold;
-        }
-        .expiry-input {
-            margin-left: 10px;
-            font-size: 0.8em;
-        }
-        #chatBox {
-            width: 400px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-top: 20px;
-        }
-        #chatHistory {
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        #chatInput {
-            width: 70%;
-            padding: 5px;
-        }
-        button {
-            padding: 5px 10px;
-        }
-        /* New styles for recipe suggestions */
-        #recipeList {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .recipe-item {
-            width: calc(50% - 10px);
-            border: 1px solid #ccc;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .recipe-details {
-            display: none;
-            margin-top: 10px;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-        }
-        .recipe-item {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background-color: #f8f9fa;
-        }
+{% extends "base.html" %}
 
-        .recipe-details {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-        }
+{% block title %}Dashboard - Smart Fridge{% endblock %}
 
-        .recipe-details-content {
-            max-height: 500px;
-            overflow-y: auto;
-        }
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="header-content">
+            <div>
+                <h1>Welcome, {{ current_user.username }}!</h1>
+                {% if current_user.primary_family %}
+                    <p class="family-name">Family: {{ current_user.primary_family.name }}</p>
+                {% endif %}
+            </div>
+            <div class="button-group">
+                <button onclick="captureImage()">Capture Image</button>
+                <button onclick="detectObjects()">Detect Objects</button>
+                <button onclick="clearInventory()">Clear Inventory</button>
+                <button onclick="toggleDetailedInfo()">Toggle Details</button>
+            </div>
+        </div>
+    </div>
 
-        .recipe-details h4 {
-            margin: 10px 0;
-            color: #333;
-        }
+    <!-- Notifications Section -->
+    <div id="notifications" class="notification-section"></div>
+    <div id="status" class="status-section"></div>
 
-        .recipe-details ul, 
-        .recipe-details ol {
-            margin-left: 20px;
-            margin-bottom: 15px;
-        }
-
-        .recipe-details li {
-            margin-bottom: 5px;
-        }
-
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
-</head>
-<body>
-    <h1>Welcome, {{ username }}!</h1>
-    <button onclick="location.href='/logout'">Logout</button>
-    <h1>Smart Fridge</h1>
-    <button onclick="captureImage()">Capture Image</button>
-    <button onclick="detectObjects()">Detect Objects</button>
-    <button onclick="clearInventory()">Clear Inventory</button>
-    <button onclick="toggleDetailedInfo()">Toggle Detailed Info</button>
-    <button onclick="checkExpiringSoon()">Check Expiring Soon</button>
-    <button onclick="location.href='/waste-prevention'">Waste Prevention</button>
-    <button onclick="location.href='/advanced-recipe-search'">Advanced Recipe Search</button>
-    <button onclick="location.href='/health-dashboard'">Health Dashboard</button>
-    <div id="notifications"></div>
-    <div id="status"></div>
+    <!-- Image Display -->
     <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
-    <div class="container">
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+        <!-- Left Column -->
         <div class="left-column">
-            <div class="inventory">
+            <!-- Inventory Section -->
+            <div class="section-card">
                 <h2>Inventory</h2>
                 <div id="inventory"></div>
             </div>
-            <div class="chart">
+
+            <!-- Charts Section -->
+            <div class="section-card">
                 <h2>Inventory Chart</h2>
                 <canvas id="inventoryBarChart"></canvas>
             </div>
-            <div class="chart">
+
+            <div class="section-card">
                 <h2>Inventory Trends</h2>
                 <canvas id="inventoryTrendChart"></canvas>
             </div>
         </div>
+
+        <!-- Right Column -->
         <div class="right-column">
-            <div id="recipeSuggestions">
-                <h2>Recipe Suggestions</h2>
-                <button onclick="getSuggestedRecipes()">Get Recipe Suggestions</button>
-                <div id="recipeList"></div>
+            <!-- Recipe Suggestions -->
+            <div class="section-card">
+                <div id="recipeSuggestions">
+                    <h2>Recipe Suggestions</h2>
+                    <button onclick="getSuggestedRecipes()">Get Recipe Suggestions</button>
+                    <div id="recipeList"></div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div id="mealPlanner">
-        <h2>Meal Planner</h2>
-        <table id="mealPlannerTable">
-            <tr>
-                <th>Day</th>
-                <th>Breakfast</th>
-                <th>Lunch</th>
-                <th>Dinner</th>
-            </tr>
-            <!-- Days will be added here dynamically -->
-        </table>
-        <button onclick="saveMealPlan()">Save Meal Plan</button>
-    </div>
-    <div id="shoppingList">
-        <h2>Shopping List</h2>
-        <button onclick="generateShoppingList()">Generate Shopping List</button>
-        <ul id="shoppingListItems"></ul>
-    </div>
-    <div id="detectedObjects"></div>
-    <div id="expiringSoon"></div>
-    
-    <div id="chatBox">
-        <h2>Chat with Kitchen Assistant</h2>
-        <div id="chatHistory"></div>
-        <input type="text" id="chatInput" placeholder="Ask your kitchen assistant...">
-        <button onclick="sendMessage()">Send</button>
-    </div>
 
-    <a href="{{ url_for('nutrition_summary') }}">View Nutrition Summary</a>
-    <a href="{{ url_for('user_preferences') }}">User Preferences</a>
+            <!-- Meal Planner -->
+            <div class="section-card">
+                <div id="mealPlanner">
+                    <h2>Meal Planner</h2>
+                    <table id="mealPlannerTable">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Breakfast</th>
+                                <th>Lunch</th>
+                                <th>Dinner</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Days will be added here dynamically -->
+                        </tbody>
+                    </table>
+                    <button onclick="saveMealPlan()">Save Meal Plan</button>
+                </div>
+            </div>
 
-    <script>
-        let inventoryChart;
+            <!-- Shopping List -->
+            <div class="section-card">
+                <div id="shoppingList">
+                    <h2>Shopping List</h2>
+                    <button onclick="generateShoppingList()">Generate Shopping List</button>
+                    <ul id="shoppingListItems"></ul>
+                </div>
+            </div>
+
+            <!-- Chat Box -->
+            <div class="section-card">
+                <div id="chatBox" class="relative">
+                    <h2 class="text-xl font-semibold mb-4">Kitchen Assistant</h2>
+                    
+                    <!-- Chat History -->
+                    <div id="chatHistory" class="h-96 overflow-y-auto mb-4 p-4 border rounded-lg">
+                        <!-- Messages will be added here dynamically -->
+                    </div>
+                    
+                    <!-- Visual Demonstration Area (placeholder for future 3D model) -->
+                    <div id="visualDemo" class="hidden mb-4 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <p class="text-gray-500">Visual demonstration will appear here</p>
+                    </div>
+                    
+                    <!-- Tips and Guidance -->
+                    <div id="tipsContainer" class="mb-4 hidden">
+                        <div id="safetyTips" class="bg-red-50 p-3 rounded-lg mb-2 hidden">
+                            <!-- Safety tips will appear here -->
+                        </div>
+                        <div id="techniqueTips" class="bg-blue-50 p-3 rounded-lg hidden">
+                            <!-- Technique tips will appear here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Input Area -->
+                    <div class="flex items-center gap-2">
+                        <input type="text" 
+                               id="chatInput" 
+                               class="flex-1 p-2 border rounded-lg"
+                               placeholder="Ask your kitchen assistant...">
+                        <button onclick="sendMessage()" 
+                                class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                            Send
+                        </button>
+                    </div>
+                    
+                    <!-- Teaching Mode Toggle -->
+                    <div class="absolute top-4 right-4">
+                        <label class="flex items-center cursor-pointer">
+                            <span class="text-sm mr-2">Teaching Mode</span>
+                            <input type="checkbox" 
+                                   id="teachingMode" 
+                                   class="hidden"
+                                   onchange="toggleTeachingMode(this.checked)">
+                            <div class="w-10 h-6 bg-gray-300 rounded-full p-1 transition duration-300 ease-in-out">
+                                <div class="w-4 h-4 bg-white rounded-full shadow-md transform duration-300 ease-in-out" 
+                                     id="teachingModeToggle"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Bottom Links -->
+    <div class="bottom-links">
+        <a href="{{ url_for('nutrition_summary') }}">View Nutrition Summary</a>
+        <a href="{{ url_for('user_preferences') }}">User Preferences</a>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .header-section {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .family-name {
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    .notification-section, .status-section {
+        background: white;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .section-card {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .left-column, .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    #chatHistory {
+        height: 300px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .chat-input-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    #chatInput {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .bottom-links {
+        margin-top: 20px;
+        display: flex;
+        gap: 20px;
+    }
+
+    .bottom-links a {
+        color: #4CAF50;
+        text-decoration: none;
+    }
+
+    .bottom-links a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .button-group {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let inventoryChart;
         let chatHistory = [];
         let currentMealPlan = {};
 
@@ -351,6 +432,116 @@ function updateInventoryTrendChart() {
                 }
             });
         });
+}
+
+function displayMessage(sender, message, extras = {}) {
+    const chatHistory = document.getElementById('chatHistory');
+    const messageContainer = document.createElement('div');
+    messageContainer.className = 'mb-4';
+    
+    // Message content
+    const messageElement = document.createElement('div');
+    messageElement.className = sender === 'You' ? 'text-right' : 'text-left';
+    messageElement.innerHTML = `
+        <span class="font-bold">${sender}:</span>
+        <span class="ml-2">${message}</span>
+    `;
+    messageContainer.appendChild(messageElement);
+    
+    // Handle extras (safety tips, technique tips, etc.)
+    if (extras.safety_tips && extras.safety_tips.length > 0) {
+        const safetyTips = document.createElement('div');
+        safetyTips.className = 'bg-red-50 p-2 mt-2 rounded text-sm';
+        safetyTips.innerHTML = `
+            <span class="font-bold">⚠️ Safety Tips:</span>
+            <ul class="list-disc ml-4">
+                ${extras.safety_tips.map(tip => `<li>${tip}</li>`).join('')}
+            </ul>
+        `;
+        messageContainer.appendChild(safetyTips);
+    }
+    
+    if (extras.technique_tips && extras.technique_tips.length > 0) {
+        const techniqueTips = document.createElement('div');
+        techniqueTips.className = 'bg-blue-50 p-2 mt-2 rounded text-sm';
+        techniqueTips.innerHTML = `
+            <span class="font-bold">💡 Technique Tips:</span>
+            <ul class="list-disc ml-4">
+                ${extras.technique_tips.map(tip => `<li>${tip}</li>`).join('')}
+            </ul>
+        `;
+        messageContainer.appendChild(techniqueTips);
+    }
+    
+    chatHistory.appendChild(messageContainer);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (message) {
+        displayMessage('You', message);
+        
+        fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message,
+                session: {
+                    teaching_mode: document.getElementById('teachingMode').checked
+                }
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayMessage('Assistant', data.response, {
+                safety_tips: data.safety_tips,
+                technique_tips: data.technique_tips
+            });
+            
+            // Handle visual demonstrations
+            if (data.visual_cues && data.visual_cues.length > 0) {
+                document.getElementById('visualDemo').classList.remove('hidden');
+                // Future: Handle 3D model animations here
+            }
+            
+            // Play audio response
+            const audio = new Audio(data.audio_url);
+            audio.play();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            displayMessage('System', 'Sorry, there was an error processing your message.');
+        });
+        
+        input.value = '';
+    }
+}
+
+function toggleTeachingMode(enabled) {
+    const toggle = document.getElementById('teachingModeToggle');
+    if (enabled) {
+        toggle.classList.add('translate-x-4');
+        fetch('/toggle_teaching_mode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled: true })
+        });
+    } else {
+        toggle.classList.remove('translate-x-4');
+        fetch('/toggle_teaching_mode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled: false })
+        });
+    }
 }
 
 
@@ -822,5 +1013,5 @@ function toggleRecipeDetails(recipeId, button) {
     });
 });
     </script>
-</body>
-</html>
+{% endblock %}
+{% endblock %}

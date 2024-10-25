@@ -4,30 +4,212 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Smart Fridge{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
     <style>
-        /* Add any global styles here */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+            padding-top: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgb(107, 114, 128);
+        }
+        .nav-link:hover {
+            color: rgb(17, 24, 39);
+            border-color: rgb(209, 213, 219);
+        }
+        .nav-link.active {
+            border-bottom-width: 2px;
+            border-color: rgb(99, 102, 241);
+            color: rgb(17, 24, 39);
         }
     </style>
-    {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <header>
-        <h1>Smart Fridge</h1>
-        <!-- Add navigation menu items here -->
+<body class="bg-gray-50">
+    <header class="bg-white shadow-md">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Smart Fridge</h1>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <!-- Navigation Links -->
+                        <a href="{{ url_for('home') }}" class="nav-link">Dashboard</a>
+                        <a href="{{ url_for('waste_prevention_dashboard') }}" class="nav-link">Waste Prevention</a>
+                        <a href="{{ url_for('advanced_recipe_search') }}" class="nav-link">Recipes</a>
+                        <a href="{{ url_for('health_dashboard') }}" class="nav-link">Health</a>
+                        
+                        <!-- Family Management Dropdown -->
+{% if current_user.is_authenticated %}
+<div class="relative inline-block text-left" x-data="{ open: false }">
+    <button @click="open = !open" class="inline-flex items-center nav-link">
+        <span>Family</span>
+        <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+    </button>
+    
+    <div x-show="open" 
+         @click.away="open = false"
+         class="absolute right-0 w-48 mt-2 bg-white rounded-md shadow-lg"
+         x-transition:enter="transition ease-out duration-100"
+         x-transition:enter-start="transform opacity-0 scale-95"
+         x-transition:enter-end="transform opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-75"
+         x-transition:leave-start="transform opacity-100 scale-100"
+         x-transition:leave-end="transform opacity-0 scale-95">
+        
+        <div class="py-1">
+            {% if current_user.families %}
+                {% for family in current_user.families %}
+                    <a href="{{ url_for('family_dashboard', family_id=family.id) }}" 
+                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {{ family.name }}
+                    </a>
+                {% endfor %}
+                <div class="border-t border-gray-200 my-1"></div>
+            {% endif %}
+            
+            <a href="{{ url_for('create_family') }}" 
+               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create New Family
+                </span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    {% if current_user.is_authenticated %}
+                        <span class="text-gray-700 mr-4">{{ current_user.username }}</span>
+                        <a href="{{ url_for('logout') }}" class="text-red-600 hover:text-red-800">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="text-blue-600 hover:text-blue-800">Login</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
     </header>
     
-    <main>
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-md {% if category == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         {% block content %}
         {% endblock %}
     </main>
     
-    <footer>
-        <!-- Add footer content here -->
+    <footer class="bg-white shadow-md mt-8">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-gray-500 text-sm">
+                Smart Fridge - Making your kitchen smarter
+            </p>
+        </div>
     </footer>
+
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    
+    <!-- Add JavaScript functions here -->
+    <script>
+        // JavaScript functions for your buttons
+
+        let inventoryChart; // Ensure let is only declared once
+
+        function saveMealPlan() {
+            console.log("Save Meal Plan button clicked");
+            fetch('/save_meal_plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ mealPlan: "Your meal plan data here" }),
+            })
+            .then(response => response.json())
+            .then(data => console.log('Meal plan saved:', data))
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function getSuggestedRecipes() {
+            console.log("Get Recipe Suggestions button clicked");
+            fetch('/suggest_recipes')
+            .then(response => response.json())
+            .then(data => console.log('Suggested recipes:', data))
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function captureImage() {
+            console.log("Capture Image button clicked");
+            fetch('/capture', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Image captured:', data);
+                if (data.image_path) {
+                    const imageElement = document.createElement("img");
+                    imageElement.src = data.image_path;
+                    document.body.appendChild(imageElement);
+                }
+            })
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function detectObjects() {
+            console.log("Detect Objects button clicked");
+            fetch('/detect', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Objects detected:', data);
+                if (data.image_path) {
+                    const imageElement = document.createElement("img");
+                    imageElement.src = data.image_path;
+                    document.body.appendChild(imageElement);
+                }
+            })
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function clearInventory() {
+            console.log("Clear Inventory button clicked");
+            fetch('/clear_inventory', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => console.log('Inventory cleared:', data))
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function toggleDetailedInfo() {
+            console.log("Toggle Detailed Info button clicked");
+            // Add your code to handle toggling detailed information here
+        }
+
+        function sendMessage() {
+            console.log("Send Message button clicked");
+            // Add your code to handle sending a message here
+        }
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

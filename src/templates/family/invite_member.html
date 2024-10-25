@@ -1,0 +1,56 @@
+<!-- templates/family/invite_member.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6">Invite Family Member</h1>
+        
+        <form method="POST" class="space-y-6">
+            {{ form.hidden_tag() }}
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">{{ form.email.label }}</label>
+                {{ form.email(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm") }}
+                {% if form.email.errors %}
+                    {% for error in form.email.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">{{ form.role.label }}</label>
+                {{ form.role(class="mt-1 block w-full rounded-md border-gray-300 shadow-sm") }}
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    {{ form.can_edit_inventory(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                    <label class="ml-2 block text-sm text-gray-900">
+                        {{ form.can_edit_inventory.label }}
+                    </label>
+                </div>
+
+                <div class="flex items-center">
+                    {{ form.can_edit_shopping_list(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                    <label class="ml-2 block text-sm text-gray-900">
+                        {{ form.can_edit_shopping_list.label }}
+                    </label>
+                </div>
+
+                <div class="flex items-center">
+                    {{ form.can_invite_members(class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded") }}
+                    <label class="ml-2 block text-sm text-gray-900">
+                        {{ form.can_invite_members.label }}
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                {{ form.submit(class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
