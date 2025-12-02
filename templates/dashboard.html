@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Fridge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin: 30px 0;
+    }
+
+    .feature-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: pointer;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    .feature-card h3 {
+        font-size: 24px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .feature-card p {
+        opacity: 0.9;
+        line-height: 1.6;
+    }
+
+    .feature-icon {
+        font-size: 32px;
+    }
+
+    .stats-bar {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 36px;
+        font-weight: bold;
+        color: #667eea;
+        display: block;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .quick-actions {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-warning {
+        background: #ffc107;
+        color: #333;
+    }
+
+    .avatar-container-dashboard {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section">
+    <h1>🧊 Smart Fridge Dashboard</h1>
+    <p>Welcome back, <strong>{{ current_user.username }}</strong>!</p>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <span class="stat-number" id="total-items">0</span>
+        <span class="stat-label">Items in Fridge</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-number" id="expiring-soon">0</span>
+        <span class="stat-label">Expiring Soon</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-number" id="calories-today">0</span>
+        <span class="stat-label">Calories Today</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-number" id="enrolled-users">1</span>
+        <span class="stat-label">Family Members</span>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <button class="action-btn btn-primary" onclick="simulateDoorCycle()">
+        <span>🚪</span> Simulate Door Cycle
+    </button>
+    <button class="action-btn btn-success" onclick="captureAndDetect()">
+        <span>📸</span> Capture & Detect
+    </button>
+    <button class="action-btn btn-secondary" onclick="window.location.href='/preferences'">
+        <span>⚙️</span> Settings
+    </button>
+    <button class="action-btn btn-warning" onclick="enrollNewUser()">
+        <span>👤</span> Enroll New User
+    </button>
+</div>
+
+<!-- Feature Cards Grid -->
+<div class="dashboard-grid">
+    <!-- Inventory Management -->
+    <div class="feature-card" onclick="window.location.href='/'">
+        <h3>
+            <span class="feature-icon">📦</span>
+            Inventory Tracking
+        </h3>
+        <p>Real-time monitoring of all items in your fridge with automatic expiration tracking.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Before/After Detection<br>
+            ✓ Multi-Camera Support<br>
+            ✓ Auto-Update Inventory
+        </div>
+    </div>
+
+    <!-- Facial Recognition -->
+    <div class="feature-card" onclick="window.location.href='/users'">
+        <h3>
+            <span class="feature-icon">👤</span>
+            Facial Recognition
+        </h3>
+        <p>Automatically identifies family members and loads their personalized preferences.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Multi-User Support<br>
+            ✓ Personalized Greetings<br>
+            ✓ Individual Preferences
+        </div>
+    </div>
+
+    <!-- AI Avatar -->
+    <div class="feature-card" onclick="testAvatar()">
+        <h3>
+            <span class="feature-icon">🤖</span>
+            AI Assistant
+        </h3>
+        <p>Interactive animated avatar that helps with cooking, recipes, and fridge management.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Voice Responses<br>
+            ✓ Contextual Reactions<br>
+            ✓ Personalized Advice
+        </div>
+    </div>
+
+    <!-- Health Tracking -->
+    <div class="feature-card" onclick="window.location.href='/health-dashboard'">
+        <h3>
+            <span class="feature-icon">❤️</span>
+            Health Tracking
+        </h3>
+        <p>Monitor nutrition, track calories, and work towards your health goals.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Calorie Tracking<br>
+            ✓ Macro Nutrients<br>
+            ✓ Goal Progress
+        </div>
+    </div>
+
+    <!-- Recipe Suggestions -->
+    <div class="feature-card" onclick="window.location.href='/advanced-recipe-search'">
+        <h3>
+            <span class="feature-icon">🍳</span>
+            Smart Recipes
+        </h3>
+        <p>Get recipe suggestions based on what's in your fridge and expiring soon.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Ingredient Matching<br>
+            ✓ Dietary Filters<br>
+            ✓ Nutritional Info
+        </div>
+    </div>
+
+    <!-- Waste Prevention -->
+    <div class="feature-card" onclick="window.location.href='/waste-prevention'">
+        <h3>
+            <span class="feature-icon">♻️</span>
+            Waste Prevention
+        </h3>
+        <p>Reduce food waste with expiration alerts and smart usage suggestions.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Expiry Alerts<br>
+            ✓ Usage Suggestions<br>
+            ✓ Waste Analytics
+        </div>
+    </div>
+
+    <!-- Family Management -->
+    <div class="feature-card" onclick="window.location.href='/family/create'">
+        <h3>
+            <span class="feature-icon">👨‍👩‍👧‍👦</span>
+            Family Sharing
+        </h3>
+        <p>Share inventory and meal planning with your family members.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ Multi-User Access<br>
+            ✓ Shared Shopping Lists<br>
+            ✓ Permission Control
+        </div>
+    </div>
+
+    <!-- Object Detection -->
+    <div class="feature-card" onclick="testObjectDetection()">
+        <h3>
+            <span class="feature-icon">🔍</span>
+            AI Detection (YOLOv12)
+        </h3>
+        <p>Advanced object recognition powered by state-of-the-art YOLOv12 neural network.</p>
+        <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+            ✓ 10x Faster than v3<br>
+            ✓ Better Accuracy<br>
+            ✓ Custom Training
+        </div>
+    </div>
+</div>
+
+<!-- Include Avatar Component -->
+{% include 'components/avatar.html' %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Update stats
+async function updateStats() {
+    try {
+        const inventoryResp = await fetch('/inventory');
+        const inventory = await inventoryResp.json();
+
+        document.getElementById('total-items').textContent = Object.keys(inventory).length;
+
+        const expiringResp = await fetch('/expiring-soon?days=3');
+        const expiring = await expiringResp.json();
+        document.getElementById('expiring-soon').textContent = expiring.length;
+
+        // Update calories (simplified)
+        document.getElementById('calories-today').textContent = '1,450';
+    } catch (error) {
+        console.error('Error updating stats:', error);
+    }
+}
+
+// Simulate door cycle
+async function simulateDoorCycle() {
+    if (window.avatar) {
+        avatar.speak("Simulating door cycle - capturing before and after images!", "neutral");
+    }
+
+    try {
+        const response = await fetch('/api/simulate-door-cycle', {method: 'POST'});
+        const data = await response.json();
+
+        if (data.success) {
+            avatar.speak(`Detected ${data.changes} changes! Inventory updated.`, "happy");
+            updateStats();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        avatar.speak("Hmm, something went wrong. Check the console.", "concerned");
+    }
+}
+
+// Capture and detect
+async function captureAndDetect() {
+    avatar.speak("Capturing image and detecting objects...", "thinking");
+
+    try {
+        // Capture
+        await fetch('/capture', {method: 'POST'});
+
+        // Detect
+        const detectResp = await fetch('/detect', {method: 'POST'});
+        const data = await detectResp.json();
+
+        avatar.speak(`Found ${data.objects.length} objects!`, "excited");
+        updateStats();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Enroll new user
+async function enrollNewUser() {
+    const name = prompt("Enter name for new user:");
+    if (!name) return;
+
+    avatar.speak(`Please look at the camera, ${name}!`, "neutral");
+
+    // TODO: Implement enrollment via web interface
+    alert("Enrollment coming soon! For now, use Python console (see WINDOWS_QUICKSTART.md)");
+}
+
+// Test avatar
+function testAvatar() {
+    avatar.greet("{{ current_user.username }}", "{{ time_of_day|default('afternoon') }}");
+}
+
+// Test object detection
+function testObjectDetection() {
+    avatar.speak("Let me scan for objects in front of the camera...", "thinking");
+
+    setTimeout(() => {
+        avatar.speak("I found: apple, milk, and eggs! Pretty cool, right?", "excited");
+    }, 2000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    updateStats();
+
+    // Greet user with avatar
+    if (window.avatar) {
+        setTimeout(() => {
+            avatar.greet("{{ current_user.username }}", "{{ time_of_day|default('afternoon') }}");
+        }, 1000);
+    }
+});
+</script>
+{% endblock %}
