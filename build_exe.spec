@@ -26,7 +26,7 @@ datas = [
     ('templates', 'templates'),
     ('static', 'static'),
     ('model_data', 'model_data'),
-    ('.env', '.'),
+    # .env is not included - users should create their own from .env.example
 ]
 
 # Collect hidden imports (packages PyInstaller might miss)
