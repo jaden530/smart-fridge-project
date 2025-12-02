@@ -1140,6 +1140,37 @@ def get_recipe_details(recipe_id):
 
 
 
+# ==============================================================================
+# MISSING PAGE ROUTES (PLACEHOLDERS)
+# ==============================================================================
+
+@app.route('/health')
+@login_required
+def health_dashboard():
+    """Health tracking dashboard."""
+    return render_template('health_dashboard.html')
+
+
+@app.route('/waste-prevention')
+@login_required
+def waste_prevention_dashboard():
+    """Waste prevention dashboard."""
+    return render_template('waste_prevention.html')
+
+
+@app.route('/recipes/search')
+@login_required
+def advanced_recipe_search():
+    """Advanced recipe search page."""
+    return render_template('recipe_search.html')
+
+
+@app.route('/users')
+@login_required
+def user_management():
+    """User management page."""
+    return render_template('user_management.html')
+
 
 if __name__ == '__main__':
     if not os.path.exists(app.static_folder):

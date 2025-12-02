@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Health Tracking - Smart Fridge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .feature-placeholder {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        margin: 20px 0;
+    }
+    .feature-placeholder h2 {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+    .feature-placeholder p {
+        font-size: 18px;
+        opacity: 0.9;
+        margin-bottom: 30px;
+    }
+    .feature-list {
+        background: rgba(255,255,255,0.1);
+        padding: 30px;
+        border-radius: 15px;
+        text-align: left;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .feature-list h3 {
+        margin-bottom: 20px;
+    }
+    .feature-list ul {
+        list-style: none;
+        padding: 0;
+    }
+    .feature-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+    .status-ready {
+        background: #28a745;
+        color: white;
+    }
+    .status-api {
+        background: #ffc107;
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feature-placeholder">
+    <h2>❤️ Health & Nutrition Tracking</h2>
+    <p>Track your nutritional intake and health goals</p>
+
+    <div class="feature-list">
+        <h3>Features Available:</h3>
+        <ul>
+            <li>
+                ✅ Calorie Tracking
+                <span class="status-badge status-ready">Ready</span>
+            </li>
+            <li>
+                ✅ Macro Tracking (Protein, Carbs, Fat)
+                <span class="status-badge status-ready">Ready</span>
+            </li>
+            <li>
+                ✅ Daily Health Goals
+                <span class="status-badge status-ready">Ready</span>
+            </li>
+            <li>
+                ⚠️ Detailed Nutrition Data
+                <span class="status-badge status-api">Requires Nutritionix API</span>
+            </li>
+            <li>
+                ⚠️ Health Recommendations
+                <span class="status-badge status-api">Requires OpenAI API</span>
+            </li>
+        </ul>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.3);">
+            <p><strong>To enable all features:</strong></p>
+            <p style="font-size: 14px;">Create a <code>.env</code> file and add your API keys:</p>
+            <pre style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: left; font-size: 12px;">
+NUTRITIONIX_APP_ID=your_app_id
+NUTRITIONIX_API_KEY=your_api_key
+OPENAI_API_KEY=your_openai_key
+            </pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
