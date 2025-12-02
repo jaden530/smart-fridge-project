@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Fridge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .card h3 {
+        margin-bottom: 15px;
+        font-size: 20px;
+    }
+    .card-content {
+        background: rgba(255,255,255,0.2);
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+    }
+    .inventory-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .inventory-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+    .inventory-item h4 {
+        color: #333;
+        margin-bottom: 8px;
+    }
+    .inventory-item p {
+        color: #666;
+        font-size: 14px;
+        margin: 5px 0;
+    }
+    .camera-controls {
+        margin: 30px 0;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 15px;
+    }
+    .btn {
+        padding: 12px 24px;
+        margin: 5px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    #captured-image {
+        max-width: 100%;
+        border-radius: 10px;
+        margin-top: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Welcome back, {{ username }}! 👋</h1>
+
+<div class="camera-controls">
+    <h3>📸 Camera Controls</h3>
+    <button class="btn btn-primary" onclick="captureImage()">Capture Image</button>
+    <button class="btn btn-primary" onclick="detectObjects()">Detect & Update Inventory</button>
+    <button class="btn btn-danger" onclick="clearInventory()">Clear Inventory</button>
+    <div id="image-container"></div>
+</div>
+
+<h2>📦 Your Inventory ({{ inventory|length }} items)</h2>
+{% if inventory %}
+    <div class="inventory-grid">
+        {% for item_name, details in inventory.items() %}
+        <div class="inventory-item">
+            <h4>{{ item_name|title }}</h4>
+            <p><strong>Quantity:</strong> {{ details.quantity }}</p>
+            <p><strong>Category:</strong> {{ details.category|title }}</p>
+            {% if details.expiry_date %}
+            <p><strong>Expires:</strong> {{ details.expiry_date[:10] }}</p>
+            {% endif %}
+            {% if details.nutritional_info %}
+            <p><strong>Calories:</strong> {{ details.nutritional_info.nf_calories|round|int }} kcal</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Your inventory is empty. Start by capturing an image!</p>
+    </div>
+{% endif %}
+
+<div class="dashboard">
+    <div class="card">
+        <h3>📊 Quick Stats</h3>
+        <div class="card-content">
+            <p><strong>Total Items:</strong> {{ inventory|length }}</p>
+            <p><strong>Categories:</strong> {{ inventory.values()|map(attribute='category')|unique|list|length }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🎯 Features</h3>
+        <div class="card-content">
+            <p>✓ AI Object Detection</p>
+            <p>✓ Nutrition Tracking</p>
+            <p>✓ Recipe Suggestions</p>
+            <p>✓ Waste Prevention</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function captureImage() {
+    const response = await fetch('/capture', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+    if (data.image_path) {
+        document.getElementById('image-container').innerHTML =
+            `<img id="captured-image" src="${data.image_path}?t=${Date.now()}" alt="Captured Image">`;
+    }
+}
+
+async function detectObjects() {
+    const response = await fetch('/detect', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+    if (data.image_path) {
+        document.getElementById('image-container').innerHTML =
+            `<img id="captured-image" src="${data.image_path}?t=${Date.now()}" alt="Detected Objects">`;
+        alert(`Detected ${data.objects.length} objects! Inventory updated.`);
+        location.reload();
+    }
+}
+
+async function clearInventory() {
+    if (confirm('Are you sure you want to clear all inventory?')) {
+        const response = await fetch('/clear_inventory', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        alert(data.message);
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

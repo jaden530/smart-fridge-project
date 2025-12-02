@@ -65,10 +65,7 @@ base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_folder = os.path.join(base_dir, 'static')
 db_path = os.path.join(base_dir, 'smartfridge.db')
 
-# Clean up old database if it exists
-if os.path.exists(db_path):
-    os.remove(db_path)
-    print("Existing database deleted.")
+# Database will be created if it doesn't exist, preserved if it does
 
 # Initialize all managers and modules
 module_manager = ModuleManager()
@@ -107,9 +104,6 @@ module_manager.register_module('family', family_manager)
 module_manager.register_module('health_tracker', health_tracker)
 
 # Initialize Flask app
-app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
-
-
 app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback_secret_key_for_development')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
@@ -170,31 +164,6 @@ def home():
     user_inventory = inventory_manager.get_inventory(current_user.id)
     return render_template('index.html', username=current_user.username, inventory=user_inventory)
 
-
-def download_file(url, file_name):
-    if not os.path.exists(file_name):
-        urllib.request.urlretrieve(url, file_name)
-
-def setup_object_detection():
-    model_dir = os.path.join(os.getcwd(), 'model_data')
-    os.makedirs(model_dir, exist_ok=True)
-    
-    weights_path = os.path.join(model_dir, "yolov3.weights")
-    config_path = os.path.join(model_dir, "yolov3.cfg")
-    classes_path = os.path.join(model_dir, "coco.names")
-    
-    download_file("https://pjreddie.com/media/files/yolov3.weights", weights_path)
-    download_file("https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg", config_path)
-    download_file("https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names", classes_path)
-    
-    return weights_path, config_path, classes_path
-
-def setup_cameras():
-    camera_manager = CameraManager()
-    camera_manager.add_camera('main', 'https://media.gettyimages.com/id/2151094361/photo/healthy-rainbow-colored-fruits-and-vegetables-background.webp?s=2048x2048&w=gi&k=20&c=eW6_Tp52NF3I_JJhYoFanTk9F72K8y_ngxkhyZMNLYI=')
-    # You can add more cameras here in the future
-    return camera_manager
-
 def generate_and_play_speech(text):
     response = client.audio.speech.create(
         model="tts-1-hd",
@@ -230,37 +199,6 @@ def get_nutritional_info(food_item, portion_size):
     else:
         print(f"Error getting nutritional info: {response.status_code}, {response.text}")
         return None
-
-
-# Setup object detection
-print(f"Current working directory: {os.getcwd()}")
-weights_path, config_path, classes_path = setup_object_detection()
-print(f"Weights path: {weights_path}")
-print(f"Config path: {config_path}")
-print(f"Classes path: {classes_path}")
-object_detector = ObjectDetector(weights_path, config_path, classes_path)
-
-# Initialize health tracker with other modules
-health_tracker = HealthTracker(inventory_manager)
-module_manager.register_module('health_tracker', health_tracker)
-
-class RecipeAPI:
-    def __init__(self):
-        self.find_recipes_by_ingredients = find_recipes_by_ingredients
-        self.get_recipe_details = get_recipe_details
-
-recipe_api = RecipeAPI()
-recipe_manager = RecipeManager(recipe_api)
-
-# Initialize food waste manager
-food_waste_manager = FoodWasteManager(inventory_manager)
-
-# Register modules
-module_manager.register_module('camera', camera_manager)
-module_manager.register_module('object_detector', object_detector)
-module_manager.register_module('inventory', inventory_manager)
-module_manager.register_module('food_waste', food_waste_manager)
-module_manager.register_module('recipe_manager', recipe_manager)
 
 @app.route('/capture', methods=['POST'])
 @login_required
