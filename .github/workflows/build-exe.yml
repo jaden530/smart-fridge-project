@@ -36,14 +36,6 @@ jobs:
         curl -L https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -o model_data/coco.names
       shell: pwsh
 
-    - name: Create icon (if needed)
-      run: |
-        if (-not (Test-Path "static/icon.ico")) {
-          New-Item -ItemType Directory -Force -Path static
-          echo "Icon placeholder" > static/icon.ico
-        }
-      shell: pwsh
-
     - name: Build executable
       run: |
         pyinstaller build_exe.spec

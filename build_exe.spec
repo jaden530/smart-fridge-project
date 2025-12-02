@@ -84,5 +84,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='static/icon.ico' if os.path.exists('static/icon.ico') else None,
+    icon=None,  # No icon for now - user can add later if desired
 )
