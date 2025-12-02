@@ -55,10 +55,24 @@ def setup_cameras():
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Initialize OpenAI client (optional - only if API key provided)
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+client = None
+if OPENAI_API_KEY:
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        print("✅ OpenAI client initialized (voice & chat features enabled)")
+    except Exception as e:
+        print(f"⚠️  OpenAI initialization failed: {e}")
+        client = None
+else:
+    print("ℹ️  No OpenAI API key - voice & chat features disabled (use .env to enable)")
+
+# Initialize Nutritionix API keys (optional)
 NUTRITIONIX_APP_ID = os.getenv('NUTRITIONIX_APP_ID')
 NUTRITIONIX_API_KEY = os.getenv('NUTRITIONIX_API_KEY')
+if not NUTRITIONIX_APP_ID or not NUTRITIONIX_API_KEY:
+    print("ℹ️  No Nutritionix API keys - nutrition lookups disabled (use .env to enable)")
 
 # Setup paths
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -165,15 +179,22 @@ def home():
     return render_template('index.html', username=current_user.username, inventory=user_inventory)
 
 def generate_and_play_speech(text):
-    response = client.audio.speech.create(
-        model="tts-1-hd",
-        voice="alloy",
-        input=text
-    )
-    
-    audio_data = io.BytesIO(response.content)
-    audio = AudioSegment.from_file(audio_data, format="mp3")
-    play(audio)
+    if not client:
+        print(f"🔇 TTS disabled (no API key): {text}")
+        return None
+
+    try:
+        response = client.audio.speech.create(
+            model="tts-1-hd",
+            voice="alloy",
+            input=text
+        )
+
+        audio_data = io.BytesIO(response.content)
+        audio = AudioSegment.from_file(audio_data, format="mp3")
+        play(audio)
+    except Exception as e:
+        print(f"⚠️  TTS error: {e}")
 
 def estimate_portion_size(object_size):
     if object_size < 1000:  # small objects
@@ -184,20 +205,28 @@ def estimate_portion_size(object_size):
         return "large"
 
 def get_nutritional_info(food_item, portion_size):
-    url = "https://trackapi.nutritionix.com/v2/natural/nutrients"
-    headers = {
-        "x-app-id": NUTRITIONIX_APP_ID,
-        "x-app-key": NUTRITIONIX_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "query": f"{portion_size} {food_item}"
-    }
-    response = requests.post(url, json=data, headers=headers)
-    if response.status_code == 200:
-        return response.json()['foods'][0]
-    else:
-        print(f"Error getting nutritional info: {response.status_code}, {response.text}")
+    if not NUTRITIONIX_APP_ID or not NUTRITIONIX_API_KEY:
+        print(f"ℹ️  Nutrition lookup disabled (no API keys): {food_item}")
+        return None
+
+    try:
+        url = "https://trackapi.nutritionix.com/v2/natural/nutrients"
+        headers = {
+            "x-app-id": NUTRITIONIX_APP_ID,
+            "x-app-key": NUTRITIONIX_API_KEY,
+            "Content-Type": "application/json"
+        }
+        data = {
+            "query": f"{portion_size} {food_item}"
+        }
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            return response.json()['foods'][0]
+        else:
+            print(f"Error getting nutritional info: {response.status_code}, {response.text}")
+            return None
+    except Exception as e:
+        print(f"⚠️  Nutrition API error: {e}")
         return None
 
 @app.route('/capture', methods=['POST'])
@@ -435,10 +464,18 @@ def user_preferences():
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
+    if not client:
+        return jsonify({
+            "response": "Chat assistant is disabled. Add OPENAI_API_KEY to .env file to enable this feature.",
+            "audio_url": None,
+            "response_type": {"has_safety_tip": False, "has_technique": False, "has_suggestion": False},
+            "should_demonstrate": False
+        }), 503
+
     message = request.json.get('message')
     chat_history = request.json.get('history', [])
     inventory = inventory_manager.get_inventory(current_user.id)
-    
+
     # Create a string with user preferences and nutritional goals
     user_context = f"The user's dietary preference is {current_user.dietary_preference or 'not set'}. "
     user_context += f"Their daily nutritional goals are: Calories: {current_user.calorie_goal or 'not set'}, "
@@ -674,21 +711,29 @@ def update_member_permissions(family_id, user_id):
 @app.route('/voice_query', methods=['POST'])
 @login_required
 def voice_query():
+    if not client:
+        return jsonify({
+            "response": "Voice assistant is disabled. Add OPENAI_API_KEY to .env file to enable this feature."
+        }), 503
+
     query = request.json.get('query')
     inventory = inventory_manager.get_inventory(current_user.id)
-    
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant for a smart fridge. The user will ask about nutritional information for items in their fridge."},
-            {"role": "user", "content": f"Given this inventory: {inventory}, answer this query: {query}"}
-        ]
-    )
-    
-    answer = response.choices[0].message.content
-    generate_and_play_speech(answer)
-    
-    return jsonify({"response": answer})
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant for a smart fridge. The user will ask about nutritional information for items in their fridge."},
+                {"role": "user", "content": f"Given this inventory: {inventory}, answer this query: {query}"}
+            ]
+        )
+
+        answer = response.choices[0].message.content
+        generate_and_play_speech(answer)
+
+        return jsonify({"response": answer})
+    except Exception as e:
+        return jsonify({"response": f"Error: {str(e)}"}), 500
 
 
 @app.route('/inventory')
