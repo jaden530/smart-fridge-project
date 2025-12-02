@@ -29,10 +29,14 @@ datas = [
     # .env is not included - users should create their own from .env.example
 ]
 
+# Add face_recognition model data files
+datas += collect_data_files('face_recognition_models')
+
 # Collect hidden imports (packages PyInstaller might miss)
 hiddenimports = [
     'ultralytics',
     'face_recognition',
+    'face_recognition_models',
     'dlib',
     'cv2',
     'numpy',
