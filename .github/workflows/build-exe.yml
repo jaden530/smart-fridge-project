@@ -30,10 +30,11 @@ jobs:
 
     - name: Download YOLOv3 models (temporary)
       run: |
-        mkdir model_data
+        New-Item -ItemType Directory -Force -Path model_data
         curl -L https://pjreddie.com/media/files/yolov3.weights -o model_data/yolov3.weights
         curl -L https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -o model_data/yolov3.cfg
         curl -L https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -o model_data/coco.names
+      shell: pwsh
 
     - name: Create icon (if needed)
       run: |
@@ -56,7 +57,7 @@ jobs:
 
     - name: Create release package
       run: |
-        mkdir release
+        New-Item -ItemType Directory -Force -Path release
         Copy-Item dist/SmartFridge.exe release/
         Copy-Item README.md release/
         Copy-Item WINDOWS_QUICKSTART.md release/
