@@ -743,6 +743,134 @@ def voice_query():
         return jsonify({"response": f"Error: {str(e)}"}), 500
 
 
+# ==============================================================================
+# LIVE CAMERA FEED ROUTES
+# ==============================================================================
+
+@app.route('/camera-feed')
+@login_required
+def camera_feed_page():
+    """Render the live camera feed page."""
+    return render_template('camera_feed.html')
+
+
+def generate_camera_stream(camera_index):
+    """Generator function for MJPEG streaming."""
+    import cv2
+
+    cap = cv2.VideoCapture(camera_index)
+    if not cap.isOpened():
+        print(f"Error: Could not open camera {camera_index}")
+        return
+
+    try:
+        while True:
+            success, frame = cap.read()
+            if not success:
+                break
+
+            # Encode frame as JPEG
+            ret, buffer = cv2.imencode('.jpg', frame)
+            if not ret:
+                continue
+
+            frame_bytes = buffer.tobytes()
+
+            # Yield frame in MJPEG format
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+    finally:
+        cap.release()
+
+
+@app.route('/video_feed/<int:camera_id>')
+@login_required
+def video_feed(camera_id):
+    """Stream MJPEG video from specified camera."""
+    from flask import Response
+    return Response(
+        generate_camera_stream(camera_id),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
+
+
+@app.route('/capture_frame', methods=['POST'])
+@login_required
+def capture_frame():
+    """Capture a single frame from specified camera."""
+    data = request.json
+    camera_id = data.get('camera_id', 0)
+
+    try:
+        import cv2
+        cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            return jsonify({"success": False, "error": f"Could not open camera {camera_id}"})
+
+        success, frame = cap.read()
+        cap.release()
+
+        if success:
+            # Save frame
+            img_path = os.path.join(static_folder, f'captured_camera_{camera_id}.jpg')
+            cv2.imwrite(img_path, frame)
+            return jsonify({
+                "success": True,
+                "image_path": f"/static/captured_camera_{camera_id}.jpg?t={int(time.time())}"
+            })
+        else:
+            return jsonify({"success": False, "error": "Failed to capture frame"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/detect_from_camera', methods=['POST'])
+@login_required
+def detect_from_camera():
+    """Detect objects from specified camera and update inventory."""
+    data = request.json
+    camera_id = data.get('camera_id', 0)
+
+    try:
+        import cv2
+
+        # Capture frame
+        cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            return jsonify({"success": False, "error": f"Could not open camera {camera_id}"})
+
+        success, frame = cap.read()
+        cap.release()
+
+        if not success:
+            return jsonify({"success": False, "error": "Failed to capture frame"})
+
+        # Detect objects
+        detector = ObjectDetector()
+        detections = detector.detect_objects(frame)
+
+        # Save annotated image
+        annotated_frame = frame.copy()
+        for detection in detections:
+            box = detection['box']
+            x, y, w, h = box['x'], box['y'], box['width'], box['height']
+            cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            label = f"{detection['class']}: {detection['confidence']:.2f}"
+            cv2.putText(annotated_frame, label, (x, y - 10),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        img_path = os.path.join(static_folder, f'detected_camera_{camera_id}.jpg')
+        cv2.imwrite(img_path, annotated_frame)
+
+        return jsonify({
+            "success": True,
+            "objects": detections,
+            "image_path": f"/static/detected_camera_{camera_id}.jpg?t={int(time.time())}"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route('/inventory')
 @login_required
 def get_inventory():
