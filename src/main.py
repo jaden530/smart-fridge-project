@@ -58,21 +58,26 @@ load_dotenv()
 # Initialize OpenAI client (optional - only if API key provided)
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 client = None
-if OPENAI_API_KEY:
+
+# Clear the OPENAI_API_KEY env var if it's empty to prevent OpenAI lib from complaining
+if not OPENAI_API_KEY or not OPENAI_API_KEY.strip():
+    if 'OPENAI_API_KEY' in os.environ:
+        del os.environ['OPENAI_API_KEY']
+    print("ℹ️  No OpenAI API key - voice & chat features disabled")
+    print("   To enable: Create .env file and add OPENAI_API_KEY=your-key-here")
+else:
     try:
         client = OpenAI(api_key=OPENAI_API_KEY)
         print("✅ OpenAI client initialized (voice & chat features enabled)")
     except Exception as e:
         print(f"⚠️  OpenAI initialization failed: {e}")
         client = None
-else:
-    print("ℹ️  No OpenAI API key - voice & chat features disabled (use .env to enable)")
 
 # Initialize Nutritionix API keys (optional)
 NUTRITIONIX_APP_ID = os.getenv('NUTRITIONIX_APP_ID')
 NUTRITIONIX_API_KEY = os.getenv('NUTRITIONIX_API_KEY')
 if not NUTRITIONIX_APP_ID or not NUTRITIONIX_API_KEY:
-    print("ℹ️  No Nutritionix API keys - nutrition lookups disabled (use .env to enable)")
+    print("ℹ️  No Nutritionix API keys - nutrition lookups disabled")
 
 # Setup paths
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
