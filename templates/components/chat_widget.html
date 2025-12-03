@@ -803,11 +803,19 @@ async function sendMessage() {
 
         // Add assistant response
         if (data.response) {
-            addMessage(data.response, 'assistant');
+            // Parse emotion markers and trigger expressions
+            const {cleanText, emotions} = parseEmotions(data.response);
+
+            addMessage(cleanText, 'assistant');
 
             // Show FULL response in avatar speech bubble (avatar is talking!)
-            const displayDuration = Math.min(data.response.length * 80, 20000); // 80ms per char, max 20s
-            showAvatarSpeech(data.response, displayDuration);
+            const displayDuration = Math.min(cleanText.length * 80, 20000); // 80ms per char, max 20s
+            showAvatarSpeech(cleanText, displayDuration);
+
+            // Trigger facial expressions
+            if (emotions.length > 0) {
+                triggerExpressions(emotions);
+            }
 
             // Play TTS audio if available
             if (data.audio_url) {
@@ -885,7 +893,79 @@ function showAvatarSpeech(text, duration = 8000) {
     }, duration);
 }
 
-// Play TTS audio and animate avatar
+// Parse emotion markers from response text
+function parseEmotions(text) {
+    const emotionPattern = /\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g;
+    const emotions = [];
+    let match;
+
+    // Extract all emotion markers
+    while ((match = emotionPattern.exec(text)) !== null) {
+        emotions.push(match[1]);
+    }
+
+    // Remove markers from text (hide from user)
+    const cleanText = text.replace(emotionPattern, '').trim();
+
+    return { cleanText, emotions };
+}
+
+// Trigger facial expressions based on emotion markers
+function triggerExpressions(emotions) {
+    const mouth = document.getElementById('avatar-mouth');
+    const eyebrowLeft = document.querySelector('.eyebrow-left');
+    const eyebrowRight = document.querySelector('.eyebrow-right');
+    const blushLeft = document.querySelector('.blush-left');
+    const blushRight = document.querySelector('.blush-right');
+    const eyes = document.querySelectorAll('.eyes-blink');
+
+    emotions.forEach((emotion, index) => {
+        setTimeout(() => {
+            switch (emotion) {
+                case 'HAPPY':
+                    mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+                    blushLeft.style.opacity = '0.6';
+                    blushRight.style.opacity = '0.6';
+                    break;
+                case 'EXCITED':
+                    mouth.setAttribute('d', 'M 52 68 Q 70 90 88 68'); // Huge open smile
+                    eyebrowLeft.setAttribute('d', 'M 50 43 Q 58 40 66 43'); // Raised
+                    eyebrowRight.setAttribute('d', 'M 74 43 Q 82 40 90 43');
+                    blushLeft.style.opacity = '0.8';
+                    blushRight.style.opacity = '0.8';
+                    break;
+                case 'THINKING':
+                    mouth.setAttribute('d', 'M 58 74 L 82 74'); // Straight line (hmm)
+                    eyebrowLeft.setAttribute('d', 'M 50 45 Q 58 43 66 47'); // One raised
+                    eyebrowRight.setAttribute('d', 'M 74 49 Q 82 47 90 47');
+                    break;
+                case 'SURPRISED':
+                    mouth.setAttribute('d', 'M 65 75 Q 70 82 75 75'); // Small O
+                    eyebrowLeft.setAttribute('d', 'M 50 42 Q 58 38 66 42'); // Both raised high
+                    eyebrowRight.setAttribute('d', 'M 74 42 Q 82 38 90 42');
+                    eyes.forEach(eye => eye.style.transform = 'scale(1.2)'); // Wide eyes
+                    setTimeout(() => eyes.forEach(eye => eye.style.transform = ''), 1500);
+                    break;
+                case 'CONCERNED':
+                    mouth.setAttribute('d', 'M 55 76 Q 70 72 85 76'); // Slight frown
+                    eyebrowLeft.setAttribute('d', 'M 50 49 Q 58 46 66 45'); // Worried
+                    eyebrowRight.setAttribute('d', 'M 74 45 Q 82 46 90 49');
+                    break;
+            }
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+                eyebrowLeft.setAttribute('d', 'M 50 47 Q 58 45 66 47'); // Normal
+                eyebrowRight.setAttribute('d', 'M 74 47 Q 82 45 90 47');
+                blushLeft.style.opacity = '0';
+                blushRight.style.opacity = '0';
+            }, 2000);
+        }, index * 500); // Stagger expressions if multiple
+    });
+}
+
+// Play TTS audio and animate avatar with MUCH MORE VISIBLE mouth movement
 function playAvatarSpeech(audioUrl) {
     const audio = document.getElementById('tts-audio');
     const mouth = document.getElementById('avatar-mouth');
@@ -898,8 +978,9 @@ function playAvatarSpeech(audioUrl) {
         console.error('Error playing audio:', err);
     });
 
-    // Animate mouth while speaking
+    // Animate mouth while speaking - MUCH MORE VISIBLE
     let talkInterval;
+    let isOpen = false;
     audio.addEventListener('play', () => {
         // Make avatar more animated while talking
         if (avatar) {
@@ -907,17 +988,17 @@ function playAvatarSpeech(audioUrl) {
             setTimeout(() => avatar.style.animation = '', 10);
         }
 
-        // Animate mouth open/close
+        // Animate mouth open/close with BIGGER movements
         talkInterval = setInterval(() => {
             if (mouth) {
-                const currentPath = mouth.getAttribute('d');
-                if (currentPath.includes('Q 70 78')) {
-                    mouth.setAttribute('d', 'M 55 72 Q 70 82 85 72'); // Open
+                if (isOpen) {
+                    mouth.setAttribute('d', 'M 55 74 Q 70 76 85 74'); // Closed (neutral)
                 } else {
-                    mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Close
+                    mouth.setAttribute('d', 'M 52 70 Q 70 88 88 70'); // WIDE OPEN
                 }
+                isOpen = !isOpen;
             }
-        }, 150);
+        }, 120); // Faster animation for more lively speech
     });
 
     audio.addEventListener('ended', () => {
