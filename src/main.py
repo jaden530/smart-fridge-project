@@ -559,7 +559,10 @@ def chat():
         voice="alloy",
         input=assistant_response
     )
-    
+
+    # Ensure static folder exists (important for PyInstaller bundles)
+    os.makedirs(app.static_folder, exist_ok=True)
+
     # Save the audio file with a unique name
     audio_filename = f"response_{int(time.time())}.mp3"
     audio_path = os.path.join(app.static_folder, audio_filename)
