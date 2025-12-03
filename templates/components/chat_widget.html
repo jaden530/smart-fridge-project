@@ -1,25 +1,72 @@
 <!-- Avatar and Chat Widget Component -->
 <div id="avatar-chat-widget" class="avatar-chat-widget">
     <!-- Avatar Display -->
-    <div class="avatar-container" id="avatar-display">
-        <svg width="120" height="120" viewBox="0 0 120 120" id="avatar-svg">
+    <div class="avatar-container" id="avatar-display" onclick="poke Avatar()">
+        <svg width="140" height="140" viewBox="0 0 140 140" id="avatar-svg">
+            <!-- Glow effect -->
+            <defs>
+                <radialGradient id="glow">
+                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:0.8"/>
+                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:0"/>
+                </radialGradient>
+                <filter id="blur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+                </filter>
+            </defs>
+
+            <!-- Glow background (pulses) -->
+            <circle cx="70" cy="70" r="60" fill="url(#glow)" class="avatar-glow"/>
+
+            <!-- Body -->
+            <ellipse cx="70" cy="95" rx="25" ry="30" fill="#764ba2" class="avatar-body"/>
+
             <!-- Head -->
-            <circle cx="60" cy="60" r="40" fill="#764ba2" class="avatar-head"/>
+            <circle cx="70" cy="60" r="35" fill="#667eea" class="avatar-head"/>
 
-            <!-- Eyes -->
-            <circle cx="50" cy="55" r="5" fill="white" class="avatar-eye-left"/>
-            <circle cx="70" cy="55" r="5" fill="white" class="avatar-eye-right"/>
-            <circle cx="50" cy="55" r="3" fill="#333" class="avatar-pupil-left"/>
-            <circle cx="70" cy="55" r="3" fill="#333" class="avatar-pupil-right"/>
+            <!-- Facial features container -->
+            <g class="avatar-face">
+                <!-- Eyes (blink animation) -->
+                <g class="eyes-group">
+                    <circle cx="58" cy="55" r="6" fill="white" class="avatar-eye"/>
+                    <circle cx="82" cy="55" r="6" fill="white" class="avatar-eye"/>
+                    <circle cx="58" cy="55" r="4" fill="#333" class="avatar-pupil-left"/>
+                    <circle cx="82" cy="55" r="4" fill="#333" class="avatar-pupil-right"/>
+                </g>
 
-            <!-- Mouth (changes with emotion) -->
-            <path id="avatar-mouth" d="M 45 70 Q 60 80 75 70" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- Eyebrows -->
+                <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-left"/>
+                <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-right"/>
+
+                <!-- Mouth (animates with emotions) -->
+                <path id="avatar-mouth" d="M 55 72 Q 70 80 85 72" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+                <!-- Blush (appears when happy) -->
+                <circle cx="48" cy="67" r="5" fill="#ff6b9d" opacity="0" class="blush-left"/>
+                <circle cx="92" cy="67" r="5" fill="#ff6b9d" opacity="0" class="blush-right"/>
+            </g>
+
+            <!-- Arms (wave animation) -->
+            <g class="arms-group">
+                <ellipse cx="40" cy="95" rx="8" ry="20" fill="#764ba2" class="arm-left" transform="rotate(-20 40 95)"/>
+                <ellipse cx="100" cy="95" rx="8" ry="20" fill="#764ba2" class="arm-right" transform="rotate(20 100 95)"/>
+            </g>
+
+            <!-- Sparkles (appear on interaction) -->
+            <g class="sparkles" opacity="0">
+                <circle cx="30" cy="40" r="3" fill="#ffd700"/>
+                <circle cx="110" cy="45" r="2" fill="#ffd700"/>
+                <circle cx="25" cy="70" r="2.5" fill="#ffd700"/>
+                <circle cx="115" cy="75" r="2" fill="#ffd700"/>
+            </g>
         </svg>
 
         <!-- Speech Bubble -->
         <div class="speech-bubble hidden" id="speech-bubble">
             <div class="speech-text" id="speech-text">Hello! I'm your Smart Fridge Assistant!</div>
         </div>
+
+        <!-- Emotion indicator -->
+        <div class="emotion-badge" id="emotion-badge">😊</div>
     </div>
 
     <!-- Chat Toggle Button -->
@@ -74,25 +121,116 @@
 }
 
 #avatar-svg {
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-    transition: transform 0.3s;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    animation: float 3s ease-in-out infinite;
+    cursor: pointer;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 }
 
 #avatar-svg:hover {
-    transform: scale(1.1);
+    animation: bounce 0.5s;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-15px) scale(1.05); }
+}
+
+.avatar-glow {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
 }
 
 .avatar-head {
     transition: fill 0.3s;
 }
 
-.avatar-eye-left, .avatar-eye-right,
+.avatar-body {
+    animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.eyes-group {
+    animation: blink 4s infinite;
+}
+
+@keyframes blink {
+    0%, 48%, 52%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.1); }
+}
+
 .avatar-pupil-left, .avatar-pupil-right {
+    transition: transform 0.2s;
+}
+
+.eyebrow-left, .eyebrow-right {
     transition: transform 0.3s;
+}
+
+.arm-left {
+    animation: wave-left 2.5s ease-in-out infinite;
+    transform-origin: 40px 80px;
+}
+
+@keyframes wave-left {
+    0%, 100% { transform: rotate(-20deg); }
+    50% { transform: rotate(-35deg); }
+}
+
+.arm-right {
+    animation: wave-right 2.5s ease-in-out infinite;
+    transform-origin: 100px 80px;
+}
+
+@keyframes wave-right {
+    0%, 100% { transform: rotate(20deg); }
+    50% { transform: rotate(35deg); }
+}
+
+.sparkles {
+    transition: opacity 0.3s;
+}
+
+.blush-left, .blush-right {
+    transition: opacity 0.3s;
 }
 
 #avatar-mouth {
     transition: d 0.3s;
+}
+
+.emotion-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    animation: badge-pop 0.3s;
+}
+
+@keyframes badge-pop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
 }
 
 .speech-bubble {
@@ -430,8 +568,106 @@ function showAvatarSpeech(text) {
     }, 5000);
 }
 
+// Avatar interaction
+let lastPokeTime = 0;
+let pokeCount = 0;
+
+function pokeAvatar() {
+    const now = Date.now();
+    const timeSinceLastPoke = now - lastPokeTime;
+
+    // Reset poke count if it's been a while
+    if (timeSinceLastPoke > 3000) {
+        pokeCount = 0;
+    }
+
+    pokeCount++;
+    lastPokeTime = now;
+
+    // Different reactions based on poke count
+    const sparkles = document.querySelector('.sparkles');
+    const blushLeft = document.querySelector('.blush-left');
+    const blushRight = document.querySelector('.blush-right');
+    const mouth = document.getElementById('avatar-mouth');
+    const emotionBadge = document.getElementById('emotion-badge');
+
+    // Show sparkles
+    sparkles.style.opacity = '1';
+    setTimeout(() => sparkles.style.opacity = '0', 600);
+
+    if (pokeCount === 1) {
+        showAvatarSpeech('Hey! That tickles! 😊');
+        blushLeft.style.opacity = '0.6';
+        blushRight.style.opacity = '0.6';
+        emotionBadge.textContent = '😊';
+        mouth.setAttribute('d', 'M 55 72 Q 70 82 85 72'); // Big smile
+    } else if (pokeCount === 2) {
+        showAvatarSpeech('Hehe! You like poking me? 😄');
+        emotionBadge.textContent = '😄';
+        mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Even bigger smile
+    } else if (pokeCount === 3) {
+        showAvatarSpeech("Okay okay, I'll help you! Click the chat button! 😅");
+        emotionBadge.textContent = '😅';
+    } else {
+        showAvatarSpeech("Want to chat? Click the 💬 button below me!");
+        emotionBadge.textContent = '💬';
+        // Bounce the chat button
+        const chatBtn = document.getElementById('chat-toggle');
+        chatBtn.style.animation = 'none';
+        setTimeout(() => chatBtn.style.animation = '', 10);
+    }
+
+    // Reset blush and mouth after a moment
+    setTimeout(() => {
+        blushLeft.style.opacity = '0';
+        blushRight.style.opacity = '0';
+        mouth.setAttribute('d', 'M 55 72 Q 70 80 85 72'); // Normal smile
+        emotionBadge.textContent = '😊';
+    }, 2000);
+}
+
+// Eye tracking (pupils follow mouse)
+document.addEventListener('mousemove', (e) => {
+    const avatar = document.getElementById('avatar-svg');
+    if (!avatar) return;
+
+    const rect = avatar.getBoundingClientRect();
+    const avatarCenterX = rect.left + rect.width / 2;
+    const avatarCenterY = rect.top + rect.height / 2;
+
+    const angle = Math.atan2(e.clientY - avatarCenterY, e.clientX - avatarCenterX);
+    const distance = Math.min(Math.hypot(e.clientX - avatarCenterX, e.clientY - avatarCenterY) / 100, 2);
+
+    const pupilLeft = document.querySelector('.avatar-pupil-left');
+    const pupilRight = document.querySelector('.avatar-pupil-right');
+
+    if (pupilLeft && pupilRight) {
+        const moveX = Math.cos(angle) * distance;
+        const moveY = Math.sin(angle) * distance;
+
+        pupilLeft.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        pupilRight.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    }
+});
+
+// Random idle animations
+setInterval(() => {
+    if (!chatOpen) {
+        const phrases = [
+            "Need recipe ideas? 🍳",
+            "Check what's expiring soon! ♻️",
+            "Hungry? Let me help! 😋",
+            "Your fridge buddy is here! 👋",
+            "Click me for fun! ✨"
+        ];
+
+        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        showAvatarSpeech(randomPhrase);
+    }
+}, 20000); // Every 20 seconds
+
 // Show initial greeting
 setTimeout(() => {
-    showAvatarSpeech('Hi! Click the chat button to talk to me!');
+    showAvatarSpeech('Hi! I\'m your Smart Fridge Assistant! Click me or the chat button! 👋');
 }, 2000);
 </script>
