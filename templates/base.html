@@ -73,12 +73,12 @@
         {% if current_user.is_authenticated %}
         <nav>
             <div>
-                <a href="{{ url_for('home') }}">🏠 Home</a>
-                <a href="{{ url_for('camera_feed_page') }}">📹 Live Cameras</a>
-                <a href="{{ url_for('user_management') }}">👤 Users</a>
-                <a href="{{ url_for('health_dashboard') }}">❤️ Health</a>
-                <a href="{{ url_for('waste_prevention_dashboard') }}">♻️ Waste Prevention</a>
-                <a href="{{ url_for('advanced_recipe_search') }}">🍳 Recipes</a>
+                <a href="/">🏠 Home</a>
+                <a href="/camera-feed">📹 Live Cameras</a>
+                <a href="/users">👤 Users</a>
+                <a href="/health-dashboard">❤️ Health</a>
+                <a href="/waste-prevention">♻️ Waste Prevention</a>
+                <a href="/advanced-recipe-search">🍳 Recipes</a>
             </div>
             <div>
                 <span style="color: white; margin-right: 15px;">👤 {{ current_user.username }}</span>
