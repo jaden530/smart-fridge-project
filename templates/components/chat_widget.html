@@ -28,16 +28,18 @@
 
             <!-- Facial features container -->
             <g class="avatar-face">
-                <!-- Eyes (only white part blinks) -->
+                <!-- Eyes (blink together using opacity) -->
                 <g class="eyes-container">
-                    <!-- Eye whites (these blink) -->
-                    <g class="eyes-blink">
-                        <ellipse cx="58" cy="55" rx="6" ry="6" fill="white" class="avatar-eye-left"/>
-                        <ellipse cx="82" cy="55" rx="6" ry="6" fill="white" class="avatar-eye-right"/>
+                    <!-- Left eye -->
+                    <g class="eye-left eyes-blink">
+                        <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                        <circle cx="58" cy="55" r="4" fill="#333" class="avatar-pupil-left"/>
                     </g>
-                    <!-- Pupils (these stay still during blink) -->
-                    <circle cx="58" cy="55" r="4" fill="#333" class="avatar-pupil-left"/>
-                    <circle cx="82" cy="55" r="4" fill="#333" class="avatar-pupil-right"/>
+                    <!-- Right eye -->
+                    <g class="eye-right eyes-blink">
+                        <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                        <circle cx="82" cy="55" r="4" fill="#333" class="avatar-pupil-right"/>
+                    </g>
                 </g>
 
                 <!-- Eyebrows -->
@@ -208,22 +210,21 @@
     50% { transform: scale(1.05, 1.08); }
 }
 
-/* Fixed blink animation - only affects eye whites */
+/* Fixed blink animation - uses opacity for smooth natural blink */
 .eyes-blink {
-    animation: blink 5s infinite;
-    transform-origin: center;
+    animation: blink 4s infinite;
 }
 
 @keyframes blink {
-    0%, 47%, 53%, 100% {
-        transform: scaleY(1);
+    0%, 46%, 50%, 100% {
+        opacity: 1;
     }
-    50% {
-        transform: scaleY(0.1);
+    48% {
+        opacity: 0;
     }
 }
 
-/* Pupils follow mouse, stay visible during blink */
+/* Pupils follow mouse smoothly */
 .avatar-pupil-left, .avatar-pupil-right {
     transition: transform 0.15s ease-out;
 }
@@ -336,9 +337,30 @@
     padding: 15px 18px;
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    max-width: 280px;
+    max-width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
     animation: fadeIn 0.3s;
     border: 2px solid #4CAF50;
+}
+
+/* Scrollbar styling for speech bubble */
+.speech-bubble::-webkit-scrollbar {
+    width: 6px;
+}
+
+.speech-bubble::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.speech-bubble::-webkit-scrollbar-thumb {
+    background: #4CAF50;
+    border-radius: 10px;
+}
+
+.speech-bubble::-webkit-scrollbar-thumb:hover {
+    background: #45a049;
 }
 
 .speech-bubble::after {
@@ -664,11 +686,14 @@ async function sendMessage() {
         if (data.response) {
             addMessage(data.response, 'assistant');
 
-            // Show avatar speech bubble briefly with first part of response
-            const preview = data.response.length > 60 ? data.response.substring(0, 60) + '...' : data.response;
-            showAvatarSpeech(preview);
+            // Show FULL response in avatar speech bubble (avatar is talking!)
+            // Keep it visible longer for full responses
+            const displayDuration = Math.min(data.response.length * 80, 20000); // 80ms per char, max 20s
+            showAvatarSpeech(data.response, displayDuration);
         } else {
-            addMessage('Sorry, I need an OpenAI API key to respond. Add OPENAI_API_KEY to your .env file!', 'assistant');
+            const errorMsg = 'Sorry, I need an OpenAI API key to respond. Add OPENAI_API_KEY to your .env file!';
+            addMessage(errorMsg, 'assistant');
+            showAvatarSpeech(errorMsg, 15000);
         }
     } catch (error) {
         typingDiv.remove();
@@ -693,16 +718,22 @@ function addMessage(text, type) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function showAvatarSpeech(text) {
+function showAvatarSpeech(text, duration = 8000) {
     const speechBubble = document.getElementById('speech-bubble');
     const speechText = document.getElementById('speech-text');
 
     speechText.textContent = text;
     speechBubble.classList.remove('hidden');
 
-    setTimeout(() => {
+    // Clear any existing timeout
+    if (window.speechTimeout) {
+        clearTimeout(window.speechTimeout);
+    }
+
+    // Set new timeout
+    window.speechTimeout = setTimeout(() => {
         speechBubble.classList.add('hidden');
-    }, 4000);
+    }, duration);
 }
 
 // Avatar interaction - MUCH more interactive!
@@ -742,8 +773,8 @@ function pokeAvatar() {
 
     // Different reactions based on poke count
     if (pokeCount === 1) {
-        // First poke - surprised and happy
-        showAvatarSpeech('Hey! That tickles! 😊');
+        // First poke - introduce himself
+        showAvatarSpeech('Hi! I\'m your Smart Fridge Assistant! Click me again to chat! 👋', 10000);
         sparkles.style.opacity = '1';
         blushLeft.style.opacity = '0.7';
         blushRight.style.opacity = '0.7';
@@ -753,74 +784,44 @@ function pokeAvatar() {
             sparkles.style.opacity = '0';
         }, 800);
 
-    } else if (pokeCount === 2) {
-        // Second poke - very happy
-        showAvatarSpeech('Hehe! You like poking me? 😄');
-        hearts.classList.add('show');
-        hearts.style.opacity = '1';
-        blushLeft.style.opacity = '0.8';
-        blushRight.style.opacity = '0.8';
-        mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Even bigger smile
-        face.classList.add('eyebrows-wiggling');
-
-        setTimeout(() => {
-            hearts.classList.remove('show');
-            hearts.style.opacity = '0';
-            face.classList.remove('eyebrows-wiggling');
-        }, 1200);
-
-    } else if (pokeCount === 3) {
-        // Third poke - excited, wants to help
-        showAvatarSpeech("I'll help you! Click the chat button! 😊");
-        arms.classList.add('arms-excited');
-        sparkles.style.opacity = '1';
-        mouth.setAttribute('d', 'M 55 70 Q 70 82 85 70');
-
-        // Make chat button wiggle
-        chatBtn.classList.add('grab-attention');
-
-        setTimeout(() => {
-            arms.classList.remove('arms-excited');
-            sparkles.style.opacity = '0';
-            chatBtn.classList.remove('grab-attention');
-        }, 1500);
-
-    } else if (pokeCount === 4) {
-        // Fourth poke - really wants you to use chat
-        showAvatarSpeech("Click the 💬 button! I can help with recipes! 🍳");
-        hearts.style.opacity = '1';
-        sparkles.style.opacity = '1';
-        chatBtn.classList.add('grab-attention');
-
-        setTimeout(() => {
-            hearts.style.opacity = '0';
-            sparkles.style.opacity = '0';
-            chatBtn.classList.remove('grab-attention');
-        }, 1500);
-
     } else {
-        // 5+ pokes - playful
-        const playfulMessages = [
-            "Okay okay! I get it, you want attention! 😄",
-            "You're persistent! I like that! 💪",
-            "Alright, let's chat! Click the button! 👇",
-            "Poke champion! 🏆 Now let's talk!",
-            "You're good at poking! Try chatting instead? 😉"
-        ];
-        const randomMsg = playfulMessages[Math.floor(Math.random() * playfulMessages.length)];
-        showAvatarSpeech(randomMsg);
-
-        // Alternate between hearts and sparkles
-        if (pokeCount % 2 === 0) {
+        // Second+ poke - OPEN CHAT immediately so user can interact!
+        if (!chatOpen) {
+            showAvatarSpeech('Let\'s chat! Ask me anything! 😊', 5000);
+            hearts.classList.add('show');
             hearts.style.opacity = '1';
-            setTimeout(() => hearts.style.opacity = '0', 1000);
+            blushLeft.style.opacity = '0.8';
+            blushRight.style.opacity = '0.8';
+            mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+
+            // Open the chat!
+            setTimeout(() => {
+                toggleChat();
+                // Focus the input so user can start typing immediately
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput) {
+                    setTimeout(() => chatInput.focus(), 100);
+                }
+            }, 800);
+
+            setTimeout(() => {
+                hearts.classList.remove('show');
+                hearts.style.opacity = '0';
+            }, 1200);
         } else {
+            // Chat already open - encourage use
+            const encouragingMessages = [
+                "I'm here to help! What do you need? 😊",
+                "Ask me about recipes! 🍳",
+                "Need cooking tips? I'm ready! 👨‍🍳",
+                "What can I help you with today? 💬"
+            ];
+            const randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+            showAvatarSpeech(randomMsg, 6000);
+
             sparkles.style.opacity = '1';
             setTimeout(() => sparkles.style.opacity = '0', 800);
         }
-
-        arms.classList.add('arms-excited');
-        setTimeout(() => arms.classList.remove('arms-excited'), 600);
     }
 
     // Reset face after emotions
@@ -858,22 +859,22 @@ document.addEventListener('mousemove', (e) => {
     }
 });
 
-// Random idle animations - more engaging
+// Random idle animations - encourage interaction
 let idleMessages = [
-    "Need recipe ideas? Click me! 🍳",
-    "Check what's expiring soon! ♻️",
-    "Hungry? I can help! 😋",
-    "Your fridge buddy is here! 👋",
+    "Click me to chat about recipes! 🍳",
+    "Need help? Click me! 😊",
+    "I can help you cook! Click to chat! 👨‍🍳",
     "Click me for cooking tips! ✨",
-    "Want to chat? I'm ready! 💬",
-    "Poke me! I won't bite! 😊",
-    "I love helping with meals! 🥘"
+    "Let's chat! Click me! 💬",
+    "I'm here to help! Click me! 🥘",
+    "Want recipe ideas? Click me! 🍽️",
+    "Click me and let's talk food! 😋"
 ];
 
 function showRandomIdleMessage() {
     if (!chatOpen) {
         const randomPhrase = idleMessages[Math.floor(Math.random() * idleMessages.length)];
-        showAvatarSpeech(randomPhrase);
+        showAvatarSpeech(randomPhrase, 10000);
 
         // Occasionally show sparkles
         if (Math.random() > 0.7) {
@@ -884,11 +885,11 @@ function showRandomIdleMessage() {
     }
 }
 
-// Show idle messages every 25 seconds
-setInterval(showRandomIdleMessage, 25000);
+// Show idle messages every 30 seconds
+setInterval(showRandomIdleMessage, 30000);
 
-// Show initial greeting
+// Show initial greeting - make it clear to click!
 setTimeout(() => {
-    showAvatarSpeech('Hi! I\'m your Smart Fridge Assistant! Poke me or click chat! 👋');
-}, 1500);
+    showAvatarSpeech('Hi! I\'m your Smart Fridge Assistant! Click me to start chatting! 👋', 12000);
+}, 2000);
 </script>
