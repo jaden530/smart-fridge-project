@@ -876,6 +876,9 @@ function addMessage(text, type) {
 }
 
 function showAvatarSpeech(text, duration = 8000) {
+    // Don't show speech bubble if chat is already open (redundant)
+    if (chatOpen) return;
+
     const speechBubble = document.getElementById('speech-bubble');
     const speechText = document.getElementById('speech-text');
 
@@ -1112,57 +1115,43 @@ function pokeAvatar() {
     avatar.classList.add('avatar-poked');
     setTimeout(() => avatar.classList.remove('avatar-poked'), 600);
 
-    // Different reactions based on poke count
-    if (pokeCount === 1) {
-        // First poke - introduce himself
-        showAvatarSpeech('Hi! I\'m your Smart Fridge Assistant! Click me again to chat! 👋', 10000);
-        sparkles.style.opacity = '1';
-        blushLeft.style.opacity = '0.7';
-        blushRight.style.opacity = '0.7';
-        mouth.setAttribute('d', 'M 55 72 Q 70 82 85 72'); // Big smile
+    // Open chat on first click!
+    if (!chatOpen) {
+        showAvatarSpeech('Let\'s chat! Ask me anything! 😊', 5000);
+        hearts.classList.add('show');
+        hearts.style.opacity = '1';
+        blushLeft.style.opacity = '0.8';
+        blushRight.style.opacity = '0.8';
+        mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+
+        // Open the chat immediately!
+        setTimeout(() => {
+            toggleChat();
+            // Focus the input so user can start typing immediately
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                setTimeout(() => chatInput.focus(), 100);
+            }
+        }, 600);
 
         setTimeout(() => {
-            sparkles.style.opacity = '0';
-        }, 800);
-
+            hearts.classList.remove('show');
+            hearts.style.opacity = '0';
+        }, 1200);
     } else {
-        // Second+ poke - OPEN CHAT immediately so user can interact!
-        if (!chatOpen) {
-            showAvatarSpeech('Let\'s chat! Ask me anything! 😊', 5000);
-            hearts.classList.add('show');
-            hearts.style.opacity = '1';
-            blushLeft.style.opacity = '0.8';
-            blushRight.style.opacity = '0.8';
-            mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+        // Chat already open - show some personality
+        const encouragingMessages = [
+            "I'm here to help! What do you need? 😊",
+            "Ask me about recipes! 🍳",
+            "Need cooking tips? I'm ready! 👨‍🍳",
+            "What can I help you with today? 💬"
+        ];
+        const randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
 
-            // Open the chat!
-            setTimeout(() => {
-                toggleChat();
-                // Focus the input so user can start typing immediately
-                const chatInput = document.getElementById('chat-input');
-                if (chatInput) {
-                    setTimeout(() => chatInput.focus(), 100);
-                }
-            }, 800);
+        sparkles.style.opacity = '1';
+        setTimeout(() => sparkles.style.opacity = '0', 800);
 
-            setTimeout(() => {
-                hearts.classList.remove('show');
-                hearts.style.opacity = '0';
-            }, 1200);
-        } else {
-            // Chat already open - encourage use
-            const encouragingMessages = [
-                "I'm here to help! What do you need? 😊",
-                "Ask me about recipes! 🍳",
-                "Need cooking tips? I'm ready! 👨‍🍳",
-                "What can I help you with today? 💬"
-            ];
-            const randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
-            showAvatarSpeech(randomMsg, 6000);
-
-            sparkles.style.opacity = '1';
-            setTimeout(() => sparkles.style.opacity = '0', 800);
-        }
+        mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
     }
 
     // Reset face after emotions
