@@ -84,15 +84,16 @@
         </div>
     </div>
 
-    <!-- Chat Toggle Button -->
-    <button class="chat-toggle-btn" id="chat-toggle" onclick="toggleChat()">
-        <span class="chat-icon">💬</span>
-    </button>
-
-    <!-- Chat Panel -->
+    <!-- Chat Panel (opens to left of avatar) -->
     <div class="chat-panel hidden" id="chat-panel">
         <div class="chat-header">
-            <h3>🤖 Smart Fridge Assistant</h3>
+            <div class="header-content">
+                <div class="avatar-indicator">🤖</div>
+                <div class="header-text">
+                    <h3>Smart Fridge Assistant</h3>
+                    <p class="status-text">Online • Ready to help!</p>
+                </div>
+            </div>
             <button onclick="toggleChat()" class="close-chat">✕</button>
         </div>
 
@@ -132,7 +133,7 @@
 
 .avatar-container {
     position: relative;
-    margin-bottom: 10px;
+    margin-bottom: 0;
 }
 
 .avatar-background {
@@ -395,73 +396,28 @@
     font-weight: 500;
 }
 
-.chat-toggle-btn {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
-    border: none;
-    color: white;
-    font-size: 28px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.chat-toggle-btn:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
-}
-
-.chat-toggle-btn:active {
-    transform: translateY(-1px) scale(0.98);
-}
-
-.chat-icon {
-    animation: icon-bounce 2s infinite;
-}
-
-@keyframes icon-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-}
-
-/* Attention-grabbing animation */
-@keyframes wiggle {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-15deg); }
-    75% { transform: rotate(15deg); }
-}
-
-.chat-toggle-btn.grab-attention {
-    animation: wiggle 0.5s ease-in-out 3;
-}
-
 .chat-panel {
     position: fixed;
-    bottom: 100px;
-    right: 20px;
-    width: 380px;
-    height: 500px;
+    bottom: 20px;
+    right: 180px;
+    width: 400px;
+    height: 550px;
     background: white;
     border-radius: 15px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.25);
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.3s;
+    animation: slideInFromRight 0.4s ease-out;
     border: 2px solid #4CAF50;
 }
 
-@keyframes slideUp {
+@keyframes slideInFromRight {
     from {
-        transform: translateY(20px);
+        transform: translateX(100px);
         opacity: 0;
     }
     to {
-        transform: translateY(0);
+        transform: translateX(0);
         opacity: 1;
     }
 }
@@ -476,10 +432,49 @@
     align-items: center;
 }
 
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-indicator {
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+    }
+}
+
+.header-text {
+    flex: 1;
+}
+
 .chat-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+    line-height: 1.2;
+}
+
+.status-text {
+    margin: 3px 0 0 0;
+    font-size: 12px;
+    opacity: 0.9;
+    font-weight: 400;
 }
 
 .close-chat {
@@ -638,14 +633,23 @@ let chatOpen = false;
 function toggleChat() {
     chatOpen = !chatOpen;
     const chatPanel = document.getElementById('chat-panel');
-    const avatarDisplay = document.getElementById('avatar-display');
+    const avatar = document.getElementById('avatar-svg');
+    const avatarGlow = document.querySelector('.avatar-glow');
 
     if (chatOpen) {
         chatPanel.classList.remove('hidden');
-        avatarDisplay.style.display = 'none';
+        // Make avatar more attentive when chatting
+        avatar.style.transform = 'scale(1.05)';
+        if (avatarGlow) {
+            avatarGlow.style.opacity = '1';
+        }
     } else {
         chatPanel.classList.add('hidden');
-        avatarDisplay.style.display = 'block';
+        // Return avatar to normal
+        avatar.style.transform = 'scale(1)';
+        if (avatarGlow) {
+            avatarGlow.style.opacity = '0.6';
+        }
     }
 }
 
@@ -763,7 +767,6 @@ function pokeAvatar() {
     const mouth = document.getElementById('avatar-mouth');
     const face = document.querySelector('.avatar-face');
     const arms = document.querySelector('.arms-group');
-    const chatBtn = document.getElementById('chat-toggle');
 
     // Trigger poke animation
     avatar.classList.remove('avatar-poked');
