@@ -52,8 +52,15 @@ def setup_cameras():
     camera_manager.add_camera('main', 'https://media.gettyimages.com/id/2151094361/photo/healthy-rainbow-colored-fruits-and-vegetables-background.webp?s=2048x2048&w=gi&k=20&c=eW6_Tp52NF3I_JJhYoFanTk9F72K8y_ngxkhyZMNLYI=')
     return camera_manager
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from current working directory (where .exe is located)
+# This ensures .env works when running as PyInstaller bundle
+env_path = os.path.join(os.getcwd(), '.env')
+load_dotenv(env_path)
+print(f"Loading .env from: {env_path}")
+if os.path.exists(env_path):
+    print("✅ .env file found!")
+else:
+    print("ℹ️  No .env file found (optional)")
 
 # Initialize OpenAI client (optional - only if API key provided)
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
