@@ -88,7 +88,31 @@
     <div class="chat-panel hidden" id="chat-panel">
         <div class="chat-header">
             <div class="header-content">
-                <div class="avatar-indicator">🤖</div>
+                <div class="avatar-indicator">
+                    <svg width="35" height="35" viewBox="0 0 140 140" class="header-avatar">
+                        <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.15)"/>
+                        <circle cx="70" cy="70" r="60" fill="url(#headerGlow)"/>
+                        <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+                        <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+                        <g>
+                            <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="58" cy="55" r="4" fill="#333"/>
+                            <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="82" cy="55" r="4" fill="#333"/>
+                        </g>
+                        <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+                        <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+                        <defs>
+                            <radialGradient id="headerGlow">
+                                <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.8"/>
+                                <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                            </radialGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <div class="header-text">
                     <h3>Smart Fridge Assistant</h3>
                     <p class="status-text">Online • Ready to help!</p>
@@ -99,7 +123,31 @@
 
         <div class="chat-messages" id="chat-messages">
             <div class="message assistant-message">
-                <div class="message-avatar">🤖</div>
+                <div class="message-avatar">
+                    <svg width="35" height="35" viewBox="0 0 140 140" class="mini-avatar">
+                        <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)"/>
+                        <circle cx="70" cy="70" r="60" fill="url(#miniGlow)"/>
+                        <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+                        <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+                        <g class="eyes-blink">
+                            <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="58" cy="55" r="4" fill="#333"/>
+                            <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="82" cy="55" r="4" fill="#333"/>
+                        </g>
+                        <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+                        <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+                        <defs>
+                            <radialGradient id="miniGlow">
+                                <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.6"/>
+                                <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                            </radialGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <div class="message-content">
                     <p>Hi! I'm your Smart Fridge Assistant. I can help you with:</p>
                     <ul>
@@ -446,8 +494,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
     animation: pulse-glow 2s infinite;
+    overflow: hidden;
+}
+
+.header-avatar {
+    width: 35px;
+    height: 35px;
+    display: block;
 }
 
 @keyframes pulse-glow {
@@ -520,6 +574,23 @@
     justify-content: center;
     font-size: 20px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.mini-avatar {
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.user-icon {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
 }
 
 .message-content {
@@ -710,9 +781,35 @@ function addMessage(text, type) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}-message`;
 
-    const avatar = type === 'user' ? '👤' : '🤖';
+    // Use mini avatar SVG for assistant, simple icon for user
+    const avatarHTML = type === 'user'
+        ? `<div class="user-icon">👤</div>`
+        : `<svg width="35" height="35" viewBox="0 0 140 140" class="mini-avatar">
+            <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)"/>
+            <circle cx="70" cy="70" r="60" fill="url(#miniGlow${Date.now()})"/>
+            <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+            <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+            <g>
+                <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                <circle cx="58" cy="55" r="4" fill="#333"/>
+                <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                <circle cx="82" cy="55" r="4" fill="#333"/>
+            </g>
+            <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+            <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+            <defs>
+                <radialGradient id="miniGlow${Date.now()}">
+                    <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.6"/>
+                    <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                </radialGradient>
+            </defs>
+        </svg>`;
+
     messageDiv.innerHTML = `
-        <div class="message-avatar">${avatar}</div>
+        <div class="message-avatar">${avatarHTML}</div>
         <div class="message-content">
             <p>${text}</p>
         </div>
