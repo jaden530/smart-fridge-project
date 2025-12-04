@@ -938,6 +938,9 @@ async function sendMessage() {
         const weather = window.getCurrentWeather ? window.getCurrentWeather() : null;
         const location = window.getUserLocationData ? window.getUserLocationData() : null;
 
+        // Detect current page for context
+        const currentPage = window.location.pathname.split('/').pop() || 'dashboard';
+
         // Use fetch with ReadableStream for real-time streaming
         const response = await fetch('/chat/stream', {
             method: 'POST',
@@ -946,7 +949,8 @@ async function sendMessage() {
                 message: message,
                 history: chatHistory,  // Pass conversation context
                 weather: weather,      // Pass current weather data
-                location: location     // Pass user location
+                location: location,    // Pass user location
+                currentPage: currentPage  // Pass current page context
             })
         });
 
@@ -958,8 +962,9 @@ async function sendMessage() {
 
             if (done) {
                 // Process any remaining text
+                let allActions = [];
                 if (sentenceBuffer.trim()) {
-                    const {cleanText, emotions} = parseEmotionsFromText(sentenceBuffer);
+                    const {cleanText, emotions, actions} = parseEmotionsFromText(sentenceBuffer);
                     displayText += cleanText;
                     textP.textContent = displayText;
 
@@ -967,10 +972,19 @@ async function sendMessage() {
                         triggerExpression(emotions[emotions.length - 1]);
                     }
 
+                    if (actions && actions.length > 0) {
+                        allActions = allActions.concat(actions);
+                    }
+
                     // Generate TTS for remaining sentence
                     if (cleanText.trim()) {
                         generateSentenceTTS(cleanText.trim());
                     }
+                }
+
+                // Execute any actions that were found
+                if (allActions.length > 0) {
+                    executeAssistantActions(allActions);
                 }
 
                 // Save assistant response to history (without emotion markers)
@@ -1401,10 +1415,12 @@ function animateMouthFromAudio() {
     updateMouth();
 }
 
-// Parse emotions from text in real-time
+// Parse emotions and actions from text in real-time
 function parseEmotionsFromText(text) {
     const emotionPattern = /\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g;
+    const actionPattern = /\[\[([A-Z_]+):([^\]]+)\]\]/g;
     const emotions = [];
+    const actions = [];
     let match;
 
     // Extract all emotion markers
@@ -1412,10 +1428,227 @@ function parseEmotionsFromText(text) {
         emotions.push(match[1]);
     }
 
-    // Remove markers from text (hide from user)
-    const cleanText = text.replace(emotionPattern, '').trim();
+    // Extract all action commands
+    const actionPatternCopy = /\[\[([A-Z_]+):([^\]]+)\]\]/g;
+    while ((match = actionPatternCopy.exec(text)) !== null) {
+        actions.push({
+            type: match[1],
+            params: match[2]
+        });
+    }
 
-    return { cleanText, emotions };
+    // Remove markers from text (hide from user)
+    let cleanText = text.replace(emotionPattern, '').trim();
+    cleanText = cleanText.replace(actionPattern, '').trim();
+
+    return { cleanText, emotions, actions };
+}
+
+// Execute assistant actions
+async function executeAssistantActions(actions) {
+    for (const action of actions) {
+        try {
+            await executeAction(action.type, action.params);
+        } catch (error) {
+            console.error(`Action execution error (${action.type}):`, error);
+        }
+    }
+}
+
+// Execute a single action
+async function executeAction(type, params) {
+    console.log(`Executing action: ${type} with params: ${params}`);
+
+    switch (type) {
+        case 'NAVIGATE':
+            // Navigate to a page
+            navigateToPage(params);
+            break;
+
+        case 'HIGHLIGHT':
+            // Highlight a UI element
+            highlightElement(params);
+            break;
+
+        case 'ADD_ITEM':
+            // Add inventory item
+            const [itemName, quantity, unit] = params.split(',').map(s => s.trim());
+            await addInventoryItem(itemName, quantity || '1', unit || 'pcs');
+            break;
+
+        case 'REMOVE_ITEM':
+            // Remove inventory item
+            await removeInventoryItem(params.trim());
+            break;
+
+        case 'ACTION':
+            // Trigger a feature/action
+            await triggerFeature(params.trim());
+            break;
+
+        default:
+            console.warn(`Unknown action type: ${type}`);
+    }
+}
+
+// Navigate to a page
+function navigateToPage(pageName) {
+    const pageMap = {
+        'dashboard': '/dashboard',
+        'inventory': '/',
+        'users': '/users',
+        'health-dashboard': '/health-dashboard',
+        'health': '/health-dashboard',
+        'recipes': '/advanced-recipe-search',
+        'waste-prevention': '/waste-prevention',
+        'waste': '/waste-prevention',
+        'preferences': '/preferences',
+        'settings': '/preferences',
+        'family': '/family/create'
+    };
+
+    const url = pageMap[pageName.toLowerCase()] || '/dashboard';
+
+    console.log(`Navigating to: ${url}`);
+
+    // Add a small delay so user sees the message first
+    setTimeout(() => {
+        window.location.href = url;
+    }, 1500);
+}
+
+// Highlight a UI element with pulsing animation
+function highlightElement(elementId) {
+    // Try multiple selectors
+    let element = document.getElementById(elementId);
+
+    if (!element) {
+        // Try querySelector for more complex selectors
+        element = document.querySelector(`[onclick*="${elementId}"]`) ||
+                  document.querySelector(`.${elementId}`) ||
+                  document.querySelector(`button:contains("${elementId}")`);
+    }
+
+    if (!element) {
+        console.warn(`Element not found: ${elementId}`);
+        return;
+    }
+
+    // Add highlight class
+    element.classList.add('assistant-highlight');
+
+    // Create pulsing glow effect
+    const style = document.createElement('style');
+    style.textContent = `
+        .assistant-highlight {
+            animation: assistant-pulse 2s ease-in-out 3;
+            position: relative;
+            z-index: 9999;
+        }
+
+        @keyframes assistant-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+                transform: scale(1.05);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Scroll element into view
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Remove highlight after animation
+    setTimeout(() => {
+        element.classList.remove('assistant-highlight');
+    }, 6000);
+}
+
+// Add item to inventory
+async function addInventoryItem(itemName, quantity, unit) {
+    try {
+        const response = await fetch('/api/inventory/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                name: itemName,
+                quantity: parseFloat(quantity) || 1,
+                unit: unit || 'pcs'
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log(`Added ${itemName} to inventory`);
+            // Refresh stats if on dashboard
+            if (typeof updateStats === 'function') {
+                updateStats();
+            }
+        } else {
+            console.error(`Failed to add ${itemName}:`, result.error);
+        }
+    } catch (error) {
+        console.error('Add inventory error:', error);
+    }
+}
+
+// Remove item from inventory
+async function removeInventoryItem(itemName) {
+    try {
+        const response = await fetch('/api/inventory/remove', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: itemName })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log(`Removed ${itemName} from inventory`);
+            // Refresh stats if on dashboard
+            if (typeof updateStats === 'function') {
+                updateStats();
+            }
+        } else {
+            console.error(`Failed to remove ${itemName}:`, result.error);
+        }
+    } catch (error) {
+        console.error('Remove inventory error:', error);
+    }
+}
+
+// Trigger a feature/action
+async function triggerFeature(featureName) {
+    console.log(`Triggering feature: ${featureName}`);
+
+    switch (featureName.toLowerCase()) {
+        case 'capture':
+            if (typeof captureAndDetect === 'function') {
+                captureAndDetect();
+            }
+            break;
+
+        case 'detect':
+            if (typeof captureAndDetect === 'function') {
+                captureAndDetect();
+            }
+            break;
+
+        case 'door-cycle':
+        case 'door':
+            if (typeof simulateDoorCycle === 'function') {
+                simulateDoorCycle();
+            }
+            break;
+
+        default:
+            console.warn(`Unknown feature: ${featureName}`);
+    }
 }
 
 // Trigger a SINGLE emotion expression instantly (for real-time streaming)

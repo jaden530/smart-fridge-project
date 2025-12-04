@@ -637,12 +637,13 @@ def chat_stream():
     chat_history = data.get('history', [])  # Get chat history from frontend
     weather_data = data.get('weather')  # Get current weather data
     location_data = data.get('location')  # Get user location
+    current_page = data.get('currentPage', 'unknown')  # Get current page
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
 
     # Same context setup as regular chat
-    user_context = f"User: {current_user.username}, Skill level: {getattr(current_user, 'cooking_skill_level', 'beginner')}"
+    user_context = f"User: {current_user.username}, Skill level: {getattr(current_user, 'cooking_skill_level', 'beginner')}, Current Page: {current_page}"
     inventory = ', '.join([item.name for item in current_user.inventory_items[:5]]) if current_user.inventory_items else "No items tracked"
 
     # Add weather context if available
@@ -679,6 +680,21 @@ def chat_stream():
     nearby stores or locations, acknowledge you can help and provide general guidance.
 
     Keep responses SHORT for fast voice playback. Be helpful, warm and friendly.
+
+    AVAILABLE ACTIONS:
+    You can perform actions to help users! When you want to:
+    - Navigate to a page: Say "[[NAVIGATE:page_name]]" (e.g., [[NAVIGATE:inventory]])
+    - Highlight UI element: Say "[[HIGHLIGHT:element_id]]" (e.g., [[HIGHLIGHT:capture-btn]])
+    - Add inventory item: Say "[[ADD_ITEM:item_name,quantity,unit]]" (e.g., [[ADD_ITEM:carrot,3,pcs]])
+    - Remove inventory item: Say "[[REMOVE_ITEM:item_name]]"
+    - Trigger feature: Say "[[ACTION:feature_name]]" (e.g., [[ACTION:capture]])
+
+    Pages: dashboard, inventory, users, health-dashboard, recipes, waste-prevention, preferences
+    Features: capture (take photo), detect (detect objects), door-cycle (simulate door open/close)
+
+    Use these actions naturally in conversation! Example:
+    "Let me add that for you! [[ADD_ITEM:carrot,2,pcs]] Done! I've added 2 carrots."
+    "Check the Capture button! [[HIGHLIGHT:capture-btn]] [[NAVIGATE:dashboard]]"
     """
 
     messages = [
@@ -1144,6 +1160,96 @@ def search_recipes():
         return jsonify(recipes)
     except Exception as e:
         print(f"Error in recipe search: {str(e)}")  # Debug print
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/inventory/add', methods=['POST'])
+@login_required
+def add_inventory_item_api():
+    """Add an item to inventory via assistant"""
+    data = request.json
+    item_name = data.get('name')
+    quantity = data.get('quantity', 1)
+    unit = data.get('unit', 'pcs')
+
+    if not item_name:
+        return jsonify({"error": "Item name required"}), 400
+
+    try:
+        # Add to inventory with default values
+        from datetime import datetime, timedelta
+
+        # Check if item already exists
+        existing_item = InventoryItem.query.filter_by(
+            user_id=current_user.id,
+            name=item_name
+        ).first()
+
+        if existing_item:
+            # Update quantity
+            existing_item.quantity = float(quantity)
+            existing_item.unit = unit
+            db.session.commit()
+            return jsonify({
+                "success": True,
+                "message": f"Updated {item_name} quantity to {quantity} {unit}",
+                "item": item_name
+            })
+        else:
+            # Create new item
+            expiry_date = datetime.now() + timedelta(days=7)  # Default 7 days
+            new_item = InventoryItem(
+                user_id=current_user.id,
+                name=item_name,
+                quantity=float(quantity),
+                unit=unit,
+                category='other',
+                expiry_date=expiry_date
+            )
+            db.session.add(new_item)
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": f"Added {quantity} {unit} of {item_name} to inventory",
+                "item": item_name
+            })
+    except Exception as e:
+        print(f"Error adding inventory item: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/inventory/remove', methods=['POST'])
+@login_required
+def remove_inventory_item_api():
+    """Remove an item from inventory via assistant"""
+    data = request.json
+    item_name = data.get('name')
+
+    if not item_name:
+        return jsonify({"error": "Item name required"}), 400
+
+    try:
+        # Find and remove item
+        item = InventoryItem.query.filter_by(
+            user_id=current_user.id,
+            name=item_name
+        ).first()
+
+        if item:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({
+                "success": True,
+                "message": f"Removed {item_name} from inventory",
+                "item": item_name
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"{item_name} not found in inventory",
+                "item": item_name
+            }), 404
+    except Exception as e:
+        print(f"Error removing inventory item: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/search', methods=['POST'])
