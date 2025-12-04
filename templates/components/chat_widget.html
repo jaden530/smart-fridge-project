@@ -789,6 +789,10 @@ function toggleChat() {
     }
 }
 
+// Audio queue for streaming TTS playback
+let audioQueue = [];
+let isPlayingAudio = false;
+
 async function sendMessage() {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
@@ -841,6 +845,12 @@ async function sendMessage() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     let fullText = '';
+    let displayText = '';
+    let sentenceBuffer = '';
+    let processedUpTo = 0;
+
+    // Clear audio queue for new message
+    audioQueue = [];
 
     try {
         // Use fetch with ReadableStream for real-time streaming
@@ -857,17 +867,21 @@ async function sendMessage() {
             const {done, value} = await reader.read();
 
             if (done) {
-                // Parse emotions from full response
-                const {cleanText, emotions} = parseEmotions(fullText);
-                textP.textContent = cleanText;
+                // Process any remaining text
+                if (sentenceBuffer.trim()) {
+                    const {cleanText, emotions} = parseEmotionsFromText(sentenceBuffer);
+                    displayText += cleanText;
+                    textP.textContent = displayText;
 
-                // Trigger expressions
-                if (emotions.length > 0) {
-                    triggerExpressions(emotions);
+                    if (emotions.length > 0) {
+                        triggerExpression(emotions[emotions.length - 1]);
+                    }
+
+                    // Generate TTS for remaining sentence
+                    if (cleanText.trim()) {
+                        generateSentenceTTS(cleanText.trim());
+                    }
                 }
-
-                // Generate and play TTS for full response
-                generateTTS(cleanText);
 
                 contentDiv.classList.remove('streaming');
                 break;
@@ -882,12 +896,55 @@ async function sendMessage() {
                     const content = line.substring(6);
                     if (content && !line.includes('event: done')) {
                         fullText += content;
-                        textP.textContent = fullText;
-                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        sentenceBuffer += content;
+
+                        // Check for complete sentence (ends with . ! ? or emotion marker)
+                        const sentenceEndMatch = sentenceBuffer.match(/[.!?](?=\s|$|\[)/);
+
+                        if (sentenceEndMatch) {
+                            const endIndex = sentenceEndMatch.index + 1;
+                            const completeSentence = sentenceBuffer.substring(0, endIndex);
+                            sentenceBuffer = sentenceBuffer.substring(endIndex);
+
+                            // Parse emotions and clean text for this sentence
+                            const {cleanText, emotions} = parseEmotionsFromText(completeSentence);
+
+                            // Update display in real-time (without emotion markers)
+                            displayText += cleanText;
+                            textP.textContent = displayText;
+
+                            // Trigger emotion immediately if found
+                            if (emotions.length > 0) {
+                                triggerExpression(emotions[emotions.length - 1]);
+                            }
+
+                            // Generate TTS for this sentence immediately
+                            if (cleanText.trim()) {
+                                generateSentenceTTS(cleanText.trim());
+                            }
+
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        } else {
+                            // No complete sentence yet, but check for emotion markers mid-stream
+                            const {cleanText, emotions} = parseEmotionsFromText(sentenceBuffer);
+
+                            // Update display with partial sentence (removing emotion markers)
+                            const currentDisplay = displayText + cleanText;
+                            textP.textContent = currentDisplay;
+
+                            // Trigger emotion if found
+                            if (emotions.length > 0) {
+                                triggerExpression(emotions[emotions.length - 1]);
+                                // Remove processed emotion markers from buffer
+                                sentenceBuffer = cleanText;
+                            }
+
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        }
+
                         animateThinking();
                     }
                 } else if (line.startsWith('event: done')) {
-                    // Done event detected
                     break;
                 }
             }
@@ -898,6 +955,158 @@ async function sendMessage() {
         textP.textContent = 'Error: Streaming failed. Please try again.';
         contentDiv.classList.remove('streaming');
     }
+}
+
+// Generate TTS for a single sentence and add to queue
+async function generateSentenceTTS(sentence) {
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: sentence,
+                generate_audio_only: true
+            })
+        });
+
+        const data = await response.json();
+        if (data.audio_url) {
+            // Add to queue
+            audioQueue.push(data.audio_url);
+
+            // Start playing if not already playing
+            if (!isPlayingAudio) {
+                playNextInQueue();
+            }
+        }
+    } catch (error) {
+        console.error('TTS generation error:', error);
+    }
+}
+
+// Play next audio in queue
+function playNextInQueue() {
+    if (audioQueue.length === 0) {
+        isPlayingAudio = false;
+        return;
+    }
+
+    isPlayingAudio = true;
+    const audioUrl = audioQueue.shift();
+
+    const audio = document.getElementById('tts-audio');
+    const mouth = document.getElementById('avatar-mouth');
+
+    audio.src = audioUrl;
+    audio.play().catch(err => {
+        console.error('Error playing audio:', err);
+        // Continue to next in queue even if this one fails
+        playNextInQueue();
+    });
+
+    // Animate mouth while speaking
+    let talkInterval;
+    let isOpen = false;
+
+    const handlePlay = () => {
+        talkInterval = setInterval(() => {
+            if (mouth) {
+                if (isOpen) {
+                    mouth.setAttribute('d', 'M 55 74 Q 70 76 85 74'); // Closed
+                } else {
+                    mouth.setAttribute('d', 'M 52 70 Q 70 88 88 70'); // Open
+                }
+                isOpen = !isOpen;
+            }
+        }, 120);
+    };
+
+    const handleEnded = () => {
+        clearInterval(talkInterval);
+        if (mouth) {
+            mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+        }
+
+        // Remove event listeners
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('ended', handleEnded);
+
+        // Play next in queue
+        playNextInQueue();
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('ended', handleEnded);
+}
+
+// Parse emotions from text in real-time
+function parseEmotionsFromText(text) {
+    const emotionPattern = /\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g;
+    const emotions = [];
+    let match;
+
+    // Extract all emotion markers
+    while ((match = emotionPattern.exec(text)) !== null) {
+        emotions.push(match[1]);
+    }
+
+    // Remove markers from text (hide from user)
+    const cleanText = text.replace(emotionPattern, '').trim();
+
+    return { cleanText, emotions };
+}
+
+// Trigger a SINGLE emotion expression instantly (for real-time streaming)
+function triggerExpression(emotion) {
+    const mouth = document.getElementById('avatar-mouth');
+    const eyebrowLeft = document.querySelector('.eyebrow-left');
+    const eyebrowRight = document.querySelector('.eyebrow-right');
+    const blushLeft = document.querySelector('.blush-left');
+    const blushRight = document.querySelector('.blush-right');
+    const eyes = document.querySelectorAll('.eyes-blink');
+
+    if (!mouth || !eyebrowLeft || !eyebrowRight) return;
+
+    switch (emotion) {
+        case 'HAPPY':
+            mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+            blushLeft.style.opacity = '0.6';
+            blushRight.style.opacity = '0.6';
+            break;
+        case 'EXCITED':
+            mouth.setAttribute('d', 'M 52 68 Q 70 90 88 68'); // Huge open smile
+            eyebrowLeft.setAttribute('d', 'M 50 43 Q 58 40 66 43'); // Raised
+            eyebrowRight.setAttribute('d', 'M 74 43 Q 82 40 90 43');
+            blushLeft.style.opacity = '0.8';
+            blushRight.style.opacity = '0.8';
+            break;
+        case 'THINKING':
+            mouth.setAttribute('d', 'M 58 74 L 82 74'); // Straight line
+            eyebrowLeft.setAttribute('d', 'M 50 45 Q 58 43 66 47'); // One raised
+            eyebrowRight.setAttribute('d', 'M 74 49 Q 82 47 90 47');
+            break;
+        case 'SURPRISED':
+            mouth.setAttribute('d', 'M 65 75 Q 70 82 75 75'); // Small O
+            eyebrowLeft.setAttribute('d', 'M 50 42 Q 58 38 66 42'); // Both raised high
+            eyebrowRight.setAttribute('d', 'M 74 42 Q 82 38 90 42');
+            eyes.forEach(eye => eye.style.transform = 'scale(1.2)'); // Wide eyes
+            setTimeout(() => eyes.forEach(eye => eye.style.transform = ''), 1500);
+            break;
+        case 'CONCERNED':
+            mouth.setAttribute('d', 'M 55 76 Q 70 72 85 76'); // Slight frown
+            eyebrowLeft.setAttribute('d', 'M 50 49 Q 58 46 66 45'); // Worried
+            eyebrowRight.setAttribute('d', 'M 74 45 Q 82 46 90 49');
+            break;
+    }
+
+    // Reset after 2.5 seconds
+    setTimeout(() => {
+        mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+        eyebrowLeft.setAttribute('d', 'M 50 47 Q 58 45 66 47');
+        eyebrowRight.setAttribute('d', 'M 74 47 Q 82 45 90 47');
+        blushLeft.style.opacity = '0';
+        blushRight.style.opacity = '0';
+    }, 2500);
 }
 
 // Generate TTS after streaming completes
