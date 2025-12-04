@@ -8,7 +8,7 @@ from camera.camera_manager import CameraManager
 from ai.object_detection import ObjectDetector
 from inventory.inventory_manager import InventoryManager
 from recipes import find_matching_recipes, find_recipes_by_ingredients, get_recipe_details, RecipeManager
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session, Response
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -547,15 +547,20 @@ def chat():
     messages.extend(chat_history)
     messages.append({"role": "user", "content": message})
     
-    # Get response from GPT - keep it short for fast TTS!
-    response = client.chat.completions.create(
+    # Use STREAMING for instant responses!
+    stream = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages,
-        max_tokens=150,  # Keep responses concise for faster TTS
-        temperature=0.8  # Slightly more expressive
+        max_tokens=150,
+        temperature=0.8,
+        stream=True  # Enable streaming!
     )
-    
-    assistant_response = response.choices[0].message.content
+
+    # Collect the full response from stream
+    assistant_response = ""
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            assistant_response += chunk.choices[0].delta.content
     
     # Generate speech from the assistant's response
     speech_response = client.audio.speech.create(
@@ -586,7 +591,78 @@ def chat():
         "response_type": response_analysis,
         "should_demonstrate": "show" in message.lower() or "demonstrate" in message.lower()
     })
-        
+
+@app.route('/chat/stream', methods=['POST'])
+@login_required
+def chat_stream():
+    """Stream chat responses in real-time for instant feedback!"""
+    if not client:
+        return jsonify({"error": "OpenAI client not initialized"}), 500
+
+    data = request.json
+    message = data.get('message', '')
+
+    if not message:
+        return jsonify({"error": "No message provided"}), 400
+
+    # Same context setup as regular chat
+    user_context = f"User: {current_user.username}, Skill level: {getattr(current_user, 'cooking_skill_level', 'beginner')}"
+    inventory = ', '.join([item.name for item in current_user.inventory_items[:5]]) if current_user.inventory_items else "No items tracked"
+
+    system_prompt = """
+    You are a friendly and expressive Smart Fridge Assistant! Keep responses CONCISE (under 80 words).
+
+    CRITICAL: Add emotion markers to animate your avatar! Use these EXACT markers:
+    [HAPPY] - Good news, enthusiasm, compliments
+    [EXCITED] - Really great ideas, discoveries
+    [THINKING] - Considering options, pondering
+    [SURPRISED] - Unexpected info, interesting facts
+    [CONCERNED] - Warnings, safety tips, caution
+
+    Example: "[HAPPY] Great choice! [THINKING] For chicken, I'd suggest..."
+
+    These markers animate your face but stay HIDDEN from the user!
+
+    Keep responses SHORT for fast voice playback. Be helpful, warm and friendly.
+    """
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": f"Additional Context: {user_context}"},
+        {"role": "system", "content": f"Current Inventory: {inventory}"},
+        {"role": "user", "content": message}
+    ]
+
+    def generate():
+        """Generator function for Server-Sent Events streaming"""
+        full_response = ""
+
+        try:
+            # Stream from GPT
+            stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                max_tokens=150,
+                temperature=0.8,
+                stream=True
+            )
+
+            # Stream chunks to frontend
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    # Send as Server-Sent Event
+                    yield f"data: {content}\n\n"
+
+            # Signal completion
+            yield f"event: done\ndata: {full_response}\n\n"
+
+        except Exception as e:
+            yield f"event: error\ndata: {str(e)}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
+
 @app.route('/family/create', methods=['GET', 'POST'])
 @login_required
 def create_family():

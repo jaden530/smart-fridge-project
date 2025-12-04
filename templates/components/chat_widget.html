@@ -607,6 +607,27 @@
     max-width: 250px;
 }
 
+.message-content.streaming {
+    background: linear-gradient(90deg, #f8f9fa 25%, #e9ecef 50%, #f8f9fa 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.streaming-text::after {
+    content: '▋';
+    animation: blink-cursor 1s step-end infinite;
+    margin-left: 2px;
+}
+
+@keyframes blink-cursor {
+    50% { opacity: 0; }
+}
+
 .message-content p {
     margin: 0 0 10px 0;
     color: #333;
@@ -778,57 +799,136 @@ async function sendMessage() {
     addMessage(message, 'user');
     input.value = '';
 
-    // Show typing indicator
+    // Create message container for streaming response
     const messagesDiv = document.getElementById('chat-messages');
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'message assistant-message typing-indicator';
-    typingDiv.innerHTML = '<div class="message-avatar">🤖</div><div class="message-content"><p>Typing...</p></div>';
-    messagesDiv.appendChild(typingDiv);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant-message';
+
+    // Create mini avatar for streaming message
+    const avatarHTML = `<svg width="35" height="35" viewBox="0 0 140 140" class="mini-avatar">
+        <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)"/>
+        <circle cx="70" cy="70" r="60" fill="url(#miniGlowStream)"/>
+        <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+        <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+        <g>
+            <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+            <circle cx="58" cy="55" r="4" fill="#333"/>
+            <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+            <circle cx="82" cy="55" r="4" fill="#333"/>
+        </g>
+        <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+        <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+        <defs>
+            <radialGradient id="miniGlowStream">
+                <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.6"/>
+                <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+            </radialGradient>
+        </defs>
+    </svg>`;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content streaming';
+    const textP = document.createElement('p');
+    textP.className = 'streaming-text';
+    contentDiv.appendChild(textP);
+
+    messageDiv.innerHTML = `<div class="message-avatar">${avatarHTML}</div>`;
+    messageDiv.appendChild(contentDiv);
+    messagesDiv.appendChild(messageDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    let fullText = '';
+
+    try {
+        // Use fetch with ReadableStream for real-time streaming
+        const response = await fetch('/chat/stream', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: message })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const {done, value} = await reader.read();
+
+            if (done) {
+                // Parse emotions from full response
+                const {cleanText, emotions} = parseEmotions(fullText);
+                textP.textContent = cleanText;
+
+                // Trigger expressions
+                if (emotions.length > 0) {
+                    triggerExpressions(emotions);
+                }
+
+                // Generate and play TTS for full response
+                generateTTS(cleanText);
+
+                contentDiv.classList.remove('streaming');
+                break;
+            }
+
+            // Decode and parse SSE data
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const content = line.substring(6);
+                    if (content && !line.includes('event: done')) {
+                        fullText += content;
+                        textP.textContent = fullText;
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        animateThinking();
+                    }
+                } else if (line.startsWith('event: done')) {
+                    // Done event detected
+                    break;
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('Streaming error:', error);
+        textP.textContent = 'Error: Streaming failed. Please try again.';
+        contentDiv.classList.remove('streaming');
+    }
+}
+
+// Generate TTS after streaming completes
+async function generateTTS(text) {
     try {
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                message: message,
-                history: []
+                message: text,
+                generate_audio_only: true
             })
         });
 
         const data = await response.json();
-
-        // Remove typing indicator
-        typingDiv.remove();
-
-        // Add assistant response
-        if (data.response) {
-            // Parse emotion markers and trigger expressions
-            const {cleanText, emotions} = parseEmotions(data.response);
-
-            addMessage(cleanText, 'assistant');
-
-            // Show FULL response in avatar speech bubble (avatar is talking!)
-            const displayDuration = Math.min(cleanText.length * 80, 20000); // 80ms per char, max 20s
-            showAvatarSpeech(cleanText, displayDuration);
-
-            // Trigger facial expressions
-            if (emotions.length > 0) {
-                triggerExpressions(emotions);
-            }
-
-            // Play TTS audio if available
-            if (data.audio_url) {
-                playAvatarSpeech(data.audio_url);
-            }
-        } else {
-            const errorMsg = 'Sorry, I need an OpenAI API key to respond. Add OPENAI_API_KEY to your .env file!';
-            addMessage(errorMsg, 'assistant');
-            showAvatarSpeech(errorMsg, 15000);
+        if (data.audio_url) {
+            playAvatarSpeech(data.audio_url);
         }
     } catch (error) {
-        typingDiv.remove();
-        addMessage('Error: Could not connect to chat service. Make sure OpenAI API is configured in .env file.', 'assistant');
+        console.error('TTS generation error:', error);
+    }
+}
+
+// Animate thinking/typing
+function animateThinking() {
+    const mouth = document.getElementById('avatar-mouth');
+    if (mouth && !mouth.dataset.animating) {
+        mouth.dataset.animating = 'true';
+        setTimeout(() => {
+            mouth.removeAttribute('data-animating');
+        }, 100);
     }
 }
 
