@@ -1019,96 +1019,106 @@ function addPendingToQueue() {
     }
 }
 
-// Phoneme-specific mouth shapes with teeth/tongue (South Park style!)
+// Phoneme-specific mouth shapes (South Park style - simple and clear!)
 const MOUTH_SHAPES = {
     // Bilabial (M, B, P) - Lips closed
     CLOSED: {
-        smilePath: 'M 58 74 L 82 74',
         smileVisible: true,
-        opening: { opacity: 0, rx: 0, ry: 0 },
-        teeth: { visible: false },
-        tongue: { visible: false }
+        smilePath: 'M 58 74 L 82 74',
+        openingVisible: false,
+        opening: { rx: 0, ry: 0 },
+        teeth: false,
+        tongue: false
     },
 
     // Open vowels (A, AH) - Wide open
     WIDE: {
-        smilePath: 'M 52 70 Q 70 72 88 70',
-        smileVisible: true,
-        opening: { opacity: 1, rx: 13, ry: 9, cy: 77 },
-        teeth: { visible: false },
-        tongue: { visible: false }
+        smileVisible: false,  // Hide smile when mouth opens!
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 16, ry: 12, cy: 78 },
+        teeth: false,
+        tongue: false
     },
 
     // Round vowels (O, OO, W) - Round opening
     ROUND: {
-        smilePath: 'M 60 72 Q 70 73 80 72',
-        smileVisible: true,
-        opening: { opacity: 1, rx: 8, ry: 8, cy: 76 },
-        teeth: { visible: false },
-        tongue: { visible: false }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 10, ry: 10, cy: 77 },
+        teeth: false,
+        tongue: false
     },
 
-    // E/I vowels - Smile with opening
+    // E/I vowels - Wide smile opening
     E_SHAPE: {
-        smilePath: 'M 54 71 Q 70 75 86 71',
-        smileVisible: true,
-        opening: { opacity: 1, rx: 11, ry: 6, cy: 76 },
-        teeth: { visible: false },
-        tongue: { visible: false }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 14, ry: 8, cy: 77 },
+        teeth: false,
+        tongue: false
     },
 
     // TH sound - Teeth visible, tongue between
     TH_SOUND: {
-        smilePath: 'M 56 72 Q 70 74 84 72',
-        smileVisible: true,
-        opening: { opacity: 0.6, rx: 9, ry: 5, cy: 76 },
-        teeth: { visible: true, opacity: 1 },
-        tongue: { visible: true, opacity: 0.9, cy: 76, ry: 2 }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 11, ry: 7, cy: 77 },
+        teeth: true,
+        tongue: true
     },
 
     // F/V sound - Teeth on lower lip
     F_SOUND: {
-        smilePath: 'M 58 73 Q 70 75 82 73',
-        smileVisible: true,
-        opening: { opacity: 0.5, rx: 8, ry: 4, cy: 76 },
-        teeth: { visible: true, opacity: 0.9, y: 74 },
-        tongue: { visible: false }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 10, ry: 6, cy: 77 },
+        teeth: true,
+        tongue: false
     },
 
-    // S sound - Teeth visible, narrow opening
+    // S sound - Teeth visible
     S_SOUND: {
-        smilePath: 'M 56 73 Q 70 74 84 73',
-        smileVisible: true,
-        opening: { opacity: 0.7, rx: 10, ry: 3, cy: 75 },
-        teeth: { visible: true, opacity: 1 },
-        tongue: { visible: false }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 12, ry: 5, cy: 76 },
+        teeth: true,
+        tongue: false
     },
 
     // L sound - Tongue visible
     L_SOUND: {
-        smilePath: 'M 56 72 Q 70 76 84 72',
-        smileVisible: true,
-        opening: { opacity: 0.8, rx: 9, ry: 5, cy: 76 },
-        teeth: { visible: false },
-        tongue: { visible: true, opacity: 0.8, cy: 75, ry: 2 }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 11, ry: 7, cy: 77 },
+        teeth: false,
+        tongue: true
     },
 
     // Small opening (default consonants)
     SMALL: {
-        smilePath: 'M 56 72 Q 70 76 84 72',
-        smileVisible: true,
-        opening: { opacity: 0.8, rx: 7, ry: 5, cy: 76 },
-        teeth: { visible: false },
-        tongue: { visible: false }
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 9, ry: 6, cy: 77 },
+        teeth: false,
+        tongue: false
     },
 
     // Resting smile
     SMILE: {
-        smilePath: 'M 55 72 Q 70 78 85 72',
         smileVisible: true,
-        opening: { opacity: 0, rx: 0, ry: 0 },
-        teeth: { visible: false },
-        tongue: { visible: false }
+        smilePath: 'M 55 72 Q 70 78 85 72',
+        openingVisible: false,
+        opening: { rx: 0, ry: 0 },
+        teeth: false,
+        tongue: false
     }
 };
 
@@ -1132,38 +1142,43 @@ function getPhonemeShape(char) {
     return MOUTH_SHAPES.SMALL;
 }
 
-// Apply mouth shape (controls smile, opening, teeth, tongue)
+// Apply mouth shape - smile OR opening, never both!
 function setMouthShape(shape) {
     const mouth = document.getElementById('avatar-mouth');
     const opening = document.getElementById('mouth-opening');
     const teeth = document.getElementById('mouth-teeth');
     const tongue = document.getElementById('mouth-tongue');
 
-    if (mouth && shape.smilePath) {
-        mouth.setAttribute('d', shape.smilePath);
-        mouth.style.opacity = shape.smileVisible ? '1' : '0';
-    }
-
-    if (opening && shape.opening) {
-        opening.setAttribute('opacity', shape.opening.opacity);
-        opening.setAttribute('rx', shape.opening.rx);
-        opening.setAttribute('ry', shape.opening.ry);
-        if (shape.opening.cy) opening.setAttribute('cy', shape.opening.cy);
-    }
-
-    if (teeth) {
-        teeth.setAttribute('opacity', shape.teeth.visible ? (shape.teeth.opacity || 1) : 0);
-        if (shape.teeth.y) {
-            teeth.querySelectorAll('rect').forEach(rect => {
-                rect.setAttribute('y', shape.teeth.y);
-            });
+    // Show EITHER smile OR opening, never both
+    if (mouth) {
+        if (shape.smileVisible) {
+            mouth.setAttribute('d', shape.smilePath);
+            mouth.style.opacity = '1';
+        } else {
+            mouth.style.opacity = '0';
         }
     }
 
+    if (opening) {
+        if (shape.openingVisible) {
+            opening.style.opacity = '1';
+            opening.setAttribute('rx', shape.opening.rx);
+            opening.setAttribute('ry', shape.opening.ry);
+            opening.setAttribute('cy', shape.opening.cy || 77);
+        } else {
+            opening.style.opacity = '0';
+            opening.setAttribute('rx', 0);
+            opening.setAttribute('ry', 0);
+        }
+    }
+
+    // Teeth and tongue - simple on/off
+    if (teeth) {
+        teeth.style.opacity = shape.teeth ? '1' : '0';
+    }
+
     if (tongue) {
-        tongue.setAttribute('opacity', shape.tongue.visible ? (shape.tongue.opacity || 0.8) : 0);
-        if (shape.tongue.cy) tongue.setAttribute('cy', shape.tongue.cy);
-        if (shape.tongue.ry) tongue.setAttribute('ry', shape.tongue.ry);
+        tongue.style.opacity = shape.tongue ? '0.85' : '0';
     }
 }
 
@@ -1239,11 +1254,11 @@ function animateMouthFromAudio() {
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     const text = currentSentenceText || '';
-    const chars = text.replace(/\s+/g, '').split(''); // Remove spaces
+    const chars = text.replace(/\s+/g, '').toUpperCase().split('');
 
     let charIndex = 0;
-    let lastVolume = 0;
-    const volumeThreshold = 15; // When sound starts/changes
+    let framesSinceLastChange = 0;
+    const framesPerChar = 8; // Slow down character advancement
 
     function updateMouth() {
         analyser.getByteFrequencyData(dataArray);
@@ -1251,14 +1266,12 @@ function animateMouthFromAudio() {
         // Calculate average volume
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        // Detect significant volume change (new sound)
-        if (Math.abs(average - lastVolume) > volumeThreshold) {
-            // Move to next character when sound changes
-            if (charIndex < chars.length && average > 10) {
-                charIndex++;
-            }
+        // Advance to next character based on time + volume
+        framesSinceLastChange++;
+        if (average > 15 && framesSinceLastChange > framesPerChar && charIndex < chars.length) {
+            charIndex++;
+            framesSinceLastChange = 0;
         }
-        lastVolume = average;
 
         // Determine mouth shape based on current character + volume
         let shape;
@@ -1274,24 +1287,22 @@ function animateMouthFromAudio() {
             // Check for TH combination
             if (currentChar === 'T' && nextChar === 'H') {
                 shape = MOUTH_SHAPES.TH_SOUND;
-                charIndex++; // Skip H
             } else {
                 shape = getPhonemeShape(currentChar);
             }
 
             // Adjust opening size based on volume
-            if (shape.opening && average > 20) {
-                shape = {...shape}; // Clone
-                shape.opening = {...shape.opening}; // Clone opening
-                const volumeMultiplier = Math.min(average / 50, 1.5);
+            if (shape.openingVisible && average > 20) {
+                shape = JSON.parse(JSON.stringify(shape)); // Deep clone
+                const volumeMultiplier = Math.min(average / 40, 1.8);
                 shape.opening.rx *= volumeMultiplier;
                 shape.opening.ry *= volumeMultiplier;
             }
         } else {
-            // Past end of text, use volume-based
-            if (average < 30) {
+            // Past end of text, use volume-based fallback
+            if (average < 25) {
                 shape = MOUTH_SHAPES.SMALL;
-            } else if (average < 60) {
+            } else if (average < 55) {
                 shape = MOUTH_SHAPES.ROUND;
             } else {
                 shape = MOUTH_SHAPES.WIDE;
