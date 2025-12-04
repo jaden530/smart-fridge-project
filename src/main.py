@@ -634,6 +634,7 @@ def chat_stream():
 
     data = request.json
     message = data.get('message', '')
+    chat_history = data.get('history', [])  # Get chat history from frontend
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
@@ -663,8 +664,13 @@ def chat_stream():
         {"role": "system", "content": system_prompt},
         {"role": "system", "content": f"Additional Context: {user_context}"},
         {"role": "system", "content": f"Current Inventory: {inventory}"},
-        {"role": "user", "content": message}
     ]
+
+    # Add chat history to maintain context
+    messages.extend(chat_history)
+
+    # Add current message
+    messages.append({"role": "user", "content": message})
 
     def generate():
         """Generator function for Server-Sent Events streaming"""
