@@ -46,17 +46,11 @@
                 <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-left"/>
                 <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-right"/>
 
-                <!-- Mouth - Anime style with natural opening -->
-                <!-- Mouth interior (dark fill, positioned to look like mouth cavity) -->
+                <!-- Mouth - Simple anime style -->
+                <!-- Mouth interior (dark fill shown when open) -->
                 <ellipse id="mouth-interior" cx="70" cy="77" rx="0" ry="0" fill="#1a1a1a" opacity="0"/>
 
-                <!-- Mouth outline (upper lip curve) -->
-                <path id="mouth-upper" d="M 55 72 Q 70 70 85 72" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" opacity="1"/>
-
-                <!-- Mouth outline (lower lip curve - shown when open) -->
-                <path id="mouth-lower" d="M 55 80 Q 70 82 85 80" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" opacity="0"/>
-
-                <!-- Simple smile line (shown when closed) -->
+                <!-- Mouth smile line (morphs shape based on speech) -->
                 <path id="avatar-mouth" d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
 
                 <!-- Blush (appears when happy) -->
@@ -1015,145 +1009,55 @@ function addPendingToQueue() {
     }
 }
 
-// Viseme mouth shapes for phoneme-based lip sync (anime style)
-const VISEMES = {
-    // Closed mouth (M, B, P) - smile line only
+// Mouth shapes for audio-reactive lip sync (anime style)
+const MOUTH_SHAPES = {
     CLOSED: {
-        smileOpacity: 1,
-        upperPath: 'M 58 74 L 82 74',
-        lowerPath: 'M 58 74 L 82 74',
-        upperOpacity: 0,
-        lowerOpacity: 0,
-        interior: { opacity: 0, rx: 0, ry: 0, cy: 77 }
+        path: 'M 58 74 L 82 74',
+        interior: { opacity: 0, rx: 0, ry: 0 }
     },
-
-    // Wide open (A, AA, AH, AE) - BIG horizontal opening
-    WIDE: {
-        smileOpacity: 0,
-        upperPath: 'M 52 72 Q 70 70 88 72',
-        lowerPath: 'M 52 82 Q 70 84 88 82',
-        upperOpacity: 1,
-        lowerOpacity: 1,
-        interior: { opacity: 1, rx: 14, ry: 8, cy: 77 }
-    },
-
-    // Round O (O, OH, OO, OW, W) - Circular opening
-    ROUND_O: {
-        smileOpacity: 0,
-        upperPath: 'M 62 72 Q 70 71 78 72',
-        lowerPath: 'M 62 82 Q 70 83 78 82',
-        upperOpacity: 1,
-        lowerOpacity: 1,
-        interior: { opacity: 1, rx: 7, ry: 7, cy: 77 }
-    },
-
-    // Big Round O (emphasis) - HUGE circular opening
-    BIG_O: {
-        smileOpacity: 0,
-        upperPath: 'M 60 71 Q 70 70 80 71',
-        lowerPath: 'M 60 83 Q 70 84 80 83',
-        upperOpacity: 1,
-        lowerOpacity: 1,
-        interior: { opacity: 1, rx: 9, ry: 9, cy: 77 }
-    },
-
-    // E/EE (E, EH, EE, I, IH, IY, Y) - Wide smile opening
-    E_SHAPE: {
-        smileOpacity: 0,
-        upperPath: 'M 54 72 Q 70 71 86 72',
-        lowerPath: 'M 54 79 Q 70 80 86 79',
-        upperOpacity: 1,
-        lowerOpacity: 1,
-        interior: { opacity: 1, rx: 11, ry: 5, cy: 76 }
-    },
-
-    // Small open (most consonants, default) - Small opening
     SMALL: {
-        smileOpacity: 0,
-        upperPath: 'M 58 72 Q 70 71 82 72',
-        lowerPath: 'M 58 79 Q 70 80 82 79',
-        upperOpacity: 1,
-        lowerOpacity: 1,
-        interior: { opacity: 1, rx: 8, ry: 4, cy: 76 }
+        path: 'M 56 72 Q 70 76 84 72',
+        interior: { opacity: 0.8, rx: 6, ry: 4 }
     },
-
-    // F/V (teeth on lower lip) - Slight opening
-    F_SHAPE: {
-        smileOpacity: 0,
-        upperPath: 'M 58 72 Q 70 71 82 72',
-        lowerPath: 'M 58 77 Q 70 78 82 77',
-        upperOpacity: 1,
-        lowerOpacity: 1,
-        interior: { opacity: 0.7, rx: 7, ry: 3, cy: 75 }
+    MEDIUM: {
+        path: 'M 54 71 Q 70 77 86 71',
+        interior: { opacity: 1, rx: 10, ry: 6 }
     },
-
-    // Smile (resting) - Closed with smile
+    WIDE: {
+        path: 'M 52 70 Q 70 78 88 70',
+        interior: { opacity: 1, rx: 13, ry: 8 }
+    },
     SMILE: {
-        smileOpacity: 1,
-        upperPath: 'M 55 72 Q 70 78 85 72',
-        lowerPath: 'M 55 72 Q 70 78 85 72',
-        upperOpacity: 0,
-        lowerOpacity: 0,
-        interior: { opacity: 0, rx: 0, ry: 0, cy: 77 }
+        path: 'M 55 72 Q 70 78 85 72',
+        interior: { opacity: 0, rx: 0, ry: 0 }
     }
 };
 
-// Map phonemes/letters to visemes
-function getVisemeForPhoneme(char) {
-    char = char.toUpperCase();
-
-    // Bilabial stops (closed mouth)
-    if ('MBP'.includes(char)) return VISEMES.CLOSED;
-
-    // Wide open vowels
-    if ('A'.includes(char)) return VISEMES.WIDE;
-
-    // Round vowels
-    if ('OUW'.includes(char)) return VISEMES.ROUND_O;
-
-    // E/I vowels
-    if ('EIY'.includes(char)) return VISEMES.E_SHAPE;
-
-    // Labiodental (F, V)
-    if ('FV'.includes(char)) return VISEMES.F_SHAPE;
-
-    // Default for consonants
-    return VISEMES.SMALL;
-}
-
-// Apply viseme to mouth (controls smile line, upper/lower lips, and interior)
-function applyViseme(viseme) {
-    const smile = document.getElementById('avatar-mouth');
-    const upper = document.getElementById('mouth-upper');
-    const lower = document.getElementById('mouth-lower');
+// Apply mouth shape (controls smile line and interior)
+function setMouthShape(shape) {
+    const mouth = document.getElementById('avatar-mouth');
     const interior = document.getElementById('mouth-interior');
 
-    if (smile && viseme.smileOpacity !== undefined) {
-        smile.setAttribute('opacity', viseme.smileOpacity);
+    if (mouth && shape.path) {
+        mouth.setAttribute('d', shape.path);
     }
 
-    if (upper && viseme.upperPath) {
-        upper.setAttribute('d', viseme.upperPath);
-        upper.setAttribute('opacity', viseme.upperOpacity);
-    }
-
-    if (lower && viseme.lowerPath) {
-        lower.setAttribute('d', viseme.lowerPath);
-        lower.setAttribute('opacity', viseme.lowerOpacity);
-    }
-
-    if (interior && viseme.interior) {
-        interior.setAttribute('opacity', viseme.interior.opacity);
-        interior.setAttribute('rx', viseme.interior.rx);
-        interior.setAttribute('ry', viseme.interior.ry);
-        interior.setAttribute('cy', viseme.interior.cy);
+    if (interior && shape.interior) {
+        interior.setAttribute('opacity', shape.interior.opacity);
+        interior.setAttribute('rx', shape.interior.rx);
+        interior.setAttribute('ry', shape.interior.ry);
     }
 }
 
 // Current sentence being spoken (for lip sync)
 let currentSentenceText = '';
 
-// Play next audio in queue with PHONEME-SYNCED lip animation
+// Audio context for real-time audio analysis
+let audioContext;
+let analyser;
+let animationFrameId;
+
+// Play next audio in queue with AUDIO-REACTIVE lip sync
 function playNextInQueue() {
     if (audioQueue.length === 0) {
         isPlayingAudio = false;
@@ -1168,85 +1072,80 @@ function playNextInQueue() {
     currentSentenceText = text;
 
     const audio = document.getElementById('tts-audio');
-    const mouth = document.getElementById('avatar-mouth');
-
     audio.src = audioUrl;
+
+    // Initialize audio context if needed
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+
+        const source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+    }
+
     audio.play().catch(err => {
         console.error('Error playing audio:', err);
         playNextInQueue();
     });
 
-    let lipSyncInterval;
-    let lipSyncTimeouts = [];
-
     const handlePlay = () => {
-        // Get audio duration for timing
-        const duration = audio.duration;
-
-        if (duration && text) {
-            // Clear any previous timeouts
-            lipSyncTimeouts.forEach(t => clearTimeout(t));
-            lipSyncTimeouts = [];
-
-            // Simple phoneme-based lip sync
-            const words = text.split(/\s+/);
-            const totalChars = text.replace(/\s+/g, '').length;
-            const msPerChar = (duration * 1000) / totalChars;
-
-            let charIndex = 0;
-
-            // Animate mouth for each character
-            for (const word of words) {
-                for (let i = 0; i < word.length; i++) {
-                    const char = word[i];
-                    const delay = charIndex * msPerChar;
-
-                    const timeout = setTimeout(() => {
-                        const viseme = getVisemeForPhoneme(char);
-                        applyViseme(viseme);
-                    }, delay);
-
-                    lipSyncTimeouts.push(timeout);
-                    charIndex++;
-                }
-
-                // Add small pause between words (closed mouth)
-                const timeout = setTimeout(() => {
-                    applyViseme(VISEMES.CLOSED);
-                }, charIndex * msPerChar);
-                lipSyncTimeouts.push(timeout);
-                charIndex += 0.5;
-            }
-        } else {
-            // Fallback to simple open/close if no duration yet
-            let isOpen = false;
-            lipSyncInterval = setInterval(() => {
-                applyViseme(isOpen ? VISEMES.WIDE : VISEMES.SMALL);
-                isOpen = !isOpen;
-            }, 150);
-        }
+        // Start audio-reactive lip sync
+        animateMouthFromAudio();
     };
 
     const handleEnded = () => {
-        clearInterval(lipSyncInterval);
-        lipSyncTimeouts.forEach(t => clearTimeout(t));
-        lipSyncTimeouts = [];
+        // Cancel animation
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
 
         // Return to resting smile
-        applyViseme(VISEMES.SMILE);
+        setMouthShape(MOUTH_SHAPES.SMILE);
 
         audio.removeEventListener('play', handlePlay);
         audio.removeEventListener('ended', handleEnded);
-        audio.removeEventListener('loadedmetadata', handlePlay);
 
         currentSentenceText = '';
         playNextInQueue();
     };
 
-    // Try to get duration once metadata loads
-    audio.addEventListener('loadedmetadata', handlePlay);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('ended', handleEnded);
+}
+
+// Animate mouth based on real-time audio volume
+function animateMouthFromAudio() {
+    if (!analyser) return;
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    function updateMouth() {
+        analyser.getByteFrequencyData(dataArray);
+
+        // Calculate average volume
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        // Map volume to mouth shapes
+        let shape;
+        if (average < 10) {
+            shape = MOUTH_SHAPES.CLOSED;
+        } else if (average < 30) {
+            shape = MOUTH_SHAPES.SMALL;
+        } else if (average < 60) {
+            shape = MOUTH_SHAPES.MEDIUM;
+        } else {
+            shape = MOUTH_SHAPES.WIDE;
+        }
+
+        setMouthShape(shape);
+
+        // Continue animation
+        animationFrameId = requestAnimationFrame(updateMouth);
+    }
+
+    updateMouth();
 }
 
 // Parse emotions from text in real-time
