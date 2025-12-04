@@ -46,11 +46,21 @@
                 <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-left"/>
                 <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-right"/>
 
-                <!-- Mouth - Simple anime style -->
-                <!-- Mouth interior (dark fill shown when open) -->
-                <ellipse id="mouth-interior" cx="70" cy="77" rx="0" ry="0" fill="#1a1a1a" opacity="0"/>
+                <!-- Mouth - Anime/cartoon style with teeth and tongue -->
+                <!-- Mouth opening (dark interior) -->
+                <ellipse id="mouth-opening" cx="70" cy="76" rx="0" ry="0" fill="#2d2d2d" opacity="0"/>
 
-                <!-- Mouth smile line (morphs shape based on speech) -->
+                <!-- Teeth (shown for specific sounds like TH, S) -->
+                <g id="mouth-teeth" opacity="0">
+                    <rect x="64" y="73" width="3" height="4" fill="white" rx="1"/>
+                    <rect x="67.5" y="73" width="3" height="4" fill="white" rx="1"/>
+                    <rect x="71" y="73" width="3" height="4" fill="white" rx="1"/>
+                </g>
+
+                <!-- Tongue (shown for TH, L sounds) -->
+                <ellipse id="mouth-tongue" cx="70" cy="78" rx="5" ry="3" fill="#ff6b9d" opacity="0"/>
+
+                <!-- Mouth smile line (main visible element) -->
                 <path id="avatar-mouth" d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
 
                 <!-- Blush (appears when happy) -->
@@ -1009,43 +1019,151 @@ function addPendingToQueue() {
     }
 }
 
-// Mouth shapes for audio-reactive lip sync (anime style)
+// Phoneme-specific mouth shapes with teeth/tongue (South Park style!)
 const MOUTH_SHAPES = {
+    // Bilabial (M, B, P) - Lips closed
     CLOSED: {
-        path: 'M 58 74 L 82 74',
-        interior: { opacity: 0, rx: 0, ry: 0 }
+        smilePath: 'M 58 74 L 82 74',
+        smileVisible: true,
+        opening: { opacity: 0, rx: 0, ry: 0 },
+        teeth: { visible: false },
+        tongue: { visible: false }
     },
-    SMALL: {
-        path: 'M 56 72 Q 70 76 84 72',
-        interior: { opacity: 0.8, rx: 6, ry: 4 }
-    },
-    MEDIUM: {
-        path: 'M 54 71 Q 70 77 86 71',
-        interior: { opacity: 1, rx: 10, ry: 6 }
-    },
+
+    // Open vowels (A, AH) - Wide open
     WIDE: {
-        path: 'M 52 70 Q 70 78 88 70',
-        interior: { opacity: 1, rx: 13, ry: 8 }
+        smilePath: 'M 52 70 Q 70 72 88 70',
+        smileVisible: true,
+        opening: { opacity: 1, rx: 13, ry: 9, cy: 77 },
+        teeth: { visible: false },
+        tongue: { visible: false }
     },
+
+    // Round vowels (O, OO, W) - Round opening
+    ROUND: {
+        smilePath: 'M 60 72 Q 70 73 80 72',
+        smileVisible: true,
+        opening: { opacity: 1, rx: 8, ry: 8, cy: 76 },
+        teeth: { visible: false },
+        tongue: { visible: false }
+    },
+
+    // E/I vowels - Smile with opening
+    E_SHAPE: {
+        smilePath: 'M 54 71 Q 70 75 86 71',
+        smileVisible: true,
+        opening: { opacity: 1, rx: 11, ry: 6, cy: 76 },
+        teeth: { visible: false },
+        tongue: { visible: false }
+    },
+
+    // TH sound - Teeth visible, tongue between
+    TH_SOUND: {
+        smilePath: 'M 56 72 Q 70 74 84 72',
+        smileVisible: true,
+        opening: { opacity: 0.6, rx: 9, ry: 5, cy: 76 },
+        teeth: { visible: true, opacity: 1 },
+        tongue: { visible: true, opacity: 0.9, cy: 76, ry: 2 }
+    },
+
+    // F/V sound - Teeth on lower lip
+    F_SOUND: {
+        smilePath: 'M 58 73 Q 70 75 82 73',
+        smileVisible: true,
+        opening: { opacity: 0.5, rx: 8, ry: 4, cy: 76 },
+        teeth: { visible: true, opacity: 0.9, y: 74 },
+        tongue: { visible: false }
+    },
+
+    // S sound - Teeth visible, narrow opening
+    S_SOUND: {
+        smilePath: 'M 56 73 Q 70 74 84 73',
+        smileVisible: true,
+        opening: { opacity: 0.7, rx: 10, ry: 3, cy: 75 },
+        teeth: { visible: true, opacity: 1 },
+        tongue: { visible: false }
+    },
+
+    // L sound - Tongue visible
+    L_SOUND: {
+        smilePath: 'M 56 72 Q 70 76 84 72',
+        smileVisible: true,
+        opening: { opacity: 0.8, rx: 9, ry: 5, cy: 76 },
+        teeth: { visible: false },
+        tongue: { visible: true, opacity: 0.8, cy: 75, ry: 2 }
+    },
+
+    // Small opening (default consonants)
+    SMALL: {
+        smilePath: 'M 56 72 Q 70 76 84 72',
+        smileVisible: true,
+        opening: { opacity: 0.8, rx: 7, ry: 5, cy: 76 },
+        teeth: { visible: false },
+        tongue: { visible: false }
+    },
+
+    // Resting smile
     SMILE: {
-        path: 'M 55 72 Q 70 78 85 72',
-        interior: { opacity: 0, rx: 0, ry: 0 }
+        smilePath: 'M 55 72 Q 70 78 85 72',
+        smileVisible: true,
+        opening: { opacity: 0, rx: 0, ry: 0 },
+        teeth: { visible: false },
+        tongue: { visible: false }
     }
 };
 
-// Apply mouth shape (controls smile line and interior)
+// Map characters to phoneme shapes
+function getPhonemeShape(char) {
+    char = char.toUpperCase();
+
+    // Specific consonants
+    if ('MBP'.includes(char)) return MOUTH_SHAPES.CLOSED;
+    if (char === 'T' && char === 'H') return MOUTH_SHAPES.TH_SOUND; // Will detect TH in text parsing
+    if ('FV'.includes(char)) return MOUTH_SHAPES.F_SOUND;
+    if ('SZ'.includes(char)) return MOUTH_SHAPES.S_SOUND;
+    if ('L'.includes(char)) return MOUTH_SHAPES.L_SOUND;
+
+    // Vowels
+    if ('A'.includes(char)) return MOUTH_SHAPES.WIDE;
+    if ('OUW'.includes(char)) return MOUTH_SHAPES.ROUND;
+    if ('EIY'.includes(char)) return MOUTH_SHAPES.E_SHAPE;
+
+    // Default
+    return MOUTH_SHAPES.SMALL;
+}
+
+// Apply mouth shape (controls smile, opening, teeth, tongue)
 function setMouthShape(shape) {
     const mouth = document.getElementById('avatar-mouth');
-    const interior = document.getElementById('mouth-interior');
+    const opening = document.getElementById('mouth-opening');
+    const teeth = document.getElementById('mouth-teeth');
+    const tongue = document.getElementById('mouth-tongue');
 
-    if (mouth && shape.path) {
-        mouth.setAttribute('d', shape.path);
+    if (mouth && shape.smilePath) {
+        mouth.setAttribute('d', shape.smilePath);
+        mouth.style.opacity = shape.smileVisible ? '1' : '0';
     }
 
-    if (interior && shape.interior) {
-        interior.setAttribute('opacity', shape.interior.opacity);
-        interior.setAttribute('rx', shape.interior.rx);
-        interior.setAttribute('ry', shape.interior.ry);
+    if (opening && shape.opening) {
+        opening.setAttribute('opacity', shape.opening.opacity);
+        opening.setAttribute('rx', shape.opening.rx);
+        opening.setAttribute('ry', shape.opening.ry);
+        if (shape.opening.cy) opening.setAttribute('cy', shape.opening.cy);
+    }
+
+    if (teeth) {
+        teeth.setAttribute('opacity', shape.teeth.visible ? (shape.teeth.opacity || 1) : 0);
+        if (shape.teeth.y) {
+            teeth.querySelectorAll('rect').forEach(rect => {
+                rect.setAttribute('y', shape.teeth.y);
+            });
+        }
+    }
+
+    if (tongue) {
+        tongue.setAttribute('opacity', shape.tongue.visible ? (shape.tongue.opacity || 0.8) : 0);
+        if (shape.tongue.cy) tongue.setAttribute('cy', shape.tongue.cy);
+        if (shape.tongue.ry) tongue.setAttribute('ry', shape.tongue.ry);
     }
 }
 
@@ -1115,11 +1233,17 @@ function playNextInQueue() {
     audio.addEventListener('ended', handleEnded);
 }
 
-// Animate mouth based on real-time audio volume
+// Animate mouth: audio volume + text phonemes = perfect sync!
 function animateMouthFromAudio() {
     if (!analyser) return;
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const text = currentSentenceText || '';
+    const chars = text.replace(/\s+/g, '').split(''); // Remove spaces
+
+    let charIndex = 0;
+    let lastVolume = 0;
+    const volumeThreshold = 15; // When sound starts/changes
 
     function updateMouth() {
         analyser.getByteFrequencyData(dataArray);
@@ -1127,16 +1251,51 @@ function animateMouthFromAudio() {
         // Calculate average volume
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        // Map volume to mouth shapes
+        // Detect significant volume change (new sound)
+        if (Math.abs(average - lastVolume) > volumeThreshold) {
+            // Move to next character when sound changes
+            if (charIndex < chars.length && average > 10) {
+                charIndex++;
+            }
+        }
+        lastVolume = average;
+
+        // Determine mouth shape based on current character + volume
         let shape;
+
         if (average < 10) {
+            // Silent - close mouth
             shape = MOUTH_SHAPES.CLOSED;
-        } else if (average < 30) {
-            shape = MOUTH_SHAPES.SMALL;
-        } else if (average < 60) {
-            shape = MOUTH_SHAPES.MEDIUM;
+        } else if (charIndex < chars.length) {
+            // Use phoneme from text
+            const currentChar = chars[charIndex];
+            const nextChar = chars[charIndex + 1];
+
+            // Check for TH combination
+            if (currentChar === 'T' && nextChar === 'H') {
+                shape = MOUTH_SHAPES.TH_SOUND;
+                charIndex++; // Skip H
+            } else {
+                shape = getPhonemeShape(currentChar);
+            }
+
+            // Adjust opening size based on volume
+            if (shape.opening && average > 20) {
+                shape = {...shape}; // Clone
+                shape.opening = {...shape.opening}; // Clone opening
+                const volumeMultiplier = Math.min(average / 50, 1.5);
+                shape.opening.rx *= volumeMultiplier;
+                shape.opening.ry *= volumeMultiplier;
+            }
         } else {
-            shape = MOUTH_SHAPES.WIDE;
+            // Past end of text, use volume-based
+            if (average < 30) {
+                shape = MOUTH_SHAPES.SMALL;
+            } else if (average < 60) {
+                shape = MOUTH_SHAPES.ROUND;
+            } else {
+                shape = MOUTH_SHAPES.WIDE;
+            }
         }
 
         setMouthShape(shape);
