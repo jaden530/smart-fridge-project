@@ -46,8 +46,12 @@
                 <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-left"/>
                 <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-right"/>
 
-                <!-- Mouth (animates with emotions) -->
-                <path id="avatar-mouth" d="M 55 72 Q 70 80 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- Mouth - Anime style with ACTUAL opening -->
+                <!-- Mouth interior (dark fill shown when open) -->
+                <ellipse id="mouth-interior" cx="70" cy="75" rx="8" ry="6" fill="#2d2d2d" opacity="0"/>
+
+                <!-- Mouth outline (smile line) -->
+                <path id="avatar-mouth" d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
 
                 <!-- Blush (appears when happy) -->
                 <circle cx="48" cy="67" r="5" fill="#ff6b9d" opacity="0" class="blush-left"/>
@@ -978,30 +982,55 @@ async function generateSentenceTTS(sentence) {
 }
 
 // Viseme mouth shapes for phoneme-based lip sync (anime style)
+// Each viseme controls BOTH the outline and interior fill
 const VISEMES = {
-    // Closed mouth (M, B, P)
-    CLOSED: 'M 58 74 L 82 74',
+    // Closed mouth (M, B, P) - just a line, no interior
+    CLOSED: {
+        outline: 'M 58 74 L 82 74',
+        interior: { opacity: 0, rx: 0, ry: 0, cy: 75 }
+    },
 
-    // Wide open (A, AA, AH, AE)
-    WIDE: 'M 48 68 Q 70 95 92 68',
+    // Wide open (A, AA, AH, AE) - BIG horizontal opening
+    WIDE: {
+        outline: 'M 50 70 Q 70 78 90 70',
+        interior: { opacity: 1, rx: 15, ry: 10, cy: 77 }
+    },
 
-    // Round O (O, OH, OO, OW, W)
-    ROUND_O: 'M 62 68 Q 70 85 78 68',
+    // Round O (O, OH, OO, OW, W) - Circular opening
+    ROUND_O: {
+        outline: 'M 60 70 Q 70 74 80 70',
+        interior: { opacity: 1, rx: 8, ry: 8, cy: 75 }
+    },
 
-    // Big Round O (emphasis)
-    BIG_O: 'M 60 65 Q 70 90 80 65',
+    // Big Round O (emphasis) - HUGE circular opening
+    BIG_O: {
+        outline: 'M 58 68 Q 70 74 82 68',
+        interior: { opacity: 1, rx: 10, ry: 10, cy: 75 }
+    },
 
-    // E/EE (E, EH, EE, I, IH, IY, Y)
-    E_SHAPE: 'M 50 70 Q 70 85 90 70',
+    // E/EE (E, EH, EE, I, IH, IY, Y) - Wide smile opening
+    E_SHAPE: {
+        outline: 'M 52 72 Q 70 76 88 72',
+        interior: { opacity: 1, rx: 12, ry: 6, cy: 76 }
+    },
 
-    // Small open (most consonants, default)
-    SMALL: 'M 55 72 Q 70 80 85 72',
+    // Small open (most consonants, default) - Small opening
+    SMALL: {
+        outline: 'M 56 72 Q 70 76 84 72',
+        interior: { opacity: 1, rx: 7, ry: 5, cy: 75 }
+    },
 
-    // F/V (teeth on lower lip)
-    F_SHAPE: 'M 55 72 Q 70 78 85 72',
+    // F/V (teeth on lower lip) - Slight opening
+    F_SHAPE: {
+        outline: 'M 58 73 Q 70 76 82 73',
+        interior: { opacity: 0.5, rx: 6, ry: 4, cy: 75 }
+    },
 
-    // Smile (resting)
-    SMILE: 'M 55 72 Q 70 78 85 72'
+    // Smile (resting) - Closed with smile
+    SMILE: {
+        outline: 'M 55 72 Q 70 78 85 72',
+        interior: { opacity: 0, rx: 0, ry: 0, cy: 75 }
+    }
 };
 
 // Map phonemes/letters to visemes
@@ -1025,6 +1054,23 @@ function getVisemeForPhoneme(char) {
 
     // Default for consonants
     return VISEMES.SMALL;
+}
+
+// Apply viseme to mouth (updates both outline and interior)
+function applyViseme(viseme) {
+    const mouth = document.getElementById('avatar-mouth');
+    const interior = document.getElementById('mouth-interior');
+
+    if (mouth && viseme.outline) {
+        mouth.setAttribute('d', viseme.outline);
+    }
+
+    if (interior && viseme.interior) {
+        interior.setAttribute('opacity', viseme.interior.opacity);
+        interior.setAttribute('rx', viseme.interior.rx);
+        interior.setAttribute('ry', viseme.interior.ry);
+        interior.setAttribute('cy', viseme.interior.cy);
+    }
 }
 
 // Current sentence being spoken (for lip sync)
@@ -1079,27 +1125,27 @@ function playNextInQueue() {
                     const delay = charIndex * msPerChar;
 
                     const timeout = setTimeout(() => {
-                        if (mouth) {
-                            const viseme = getVisemeForPhoneme(char);
-                            mouth.setAttribute('d', viseme);
-                        }
+                        const viseme = getVisemeForPhoneme(char);
+                        applyViseme(viseme);
                     }, delay);
 
                     lipSyncTimeouts.push(timeout);
                     charIndex++;
                 }
 
-                // Add small pause between words
+                // Add small pause between words (closed mouth)
+                const timeout = setTimeout(() => {
+                    applyViseme(VISEMES.CLOSED);
+                }, charIndex * msPerChar);
+                lipSyncTimeouts.push(timeout);
                 charIndex += 0.5;
             }
         } else {
             // Fallback to simple open/close if no duration yet
             let isOpen = false;
             lipSyncInterval = setInterval(() => {
-                if (mouth) {
-                    mouth.setAttribute('d', isOpen ? VISEMES.WIDE : VISEMES.SMALL);
-                    isOpen = !isOpen;
-                }
+                applyViseme(isOpen ? VISEMES.WIDE : VISEMES.SMALL);
+                isOpen = !isOpen;
             }, 150);
         }
     };
@@ -1109,9 +1155,8 @@ function playNextInQueue() {
         lipSyncTimeouts.forEach(t => clearTimeout(t));
         lipSyncTimeouts = [];
 
-        if (mouth) {
-            mouth.setAttribute('d', VISEMES.SMILE);
-        }
+        // Return to resting smile
+        applyViseme(VISEMES.SMILE);
 
         audio.removeEventListener('play', handlePlay);
         audio.removeEventListener('ended', handleEnded);
