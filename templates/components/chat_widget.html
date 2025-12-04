@@ -961,8 +961,11 @@ async function generateSentenceTTS(sentence) {
 
         const data = await response.json();
         if (data.audio_url) {
-            // Add to queue
-            audioQueue.push(data.audio_url);
+            // Add to queue with both URL and text for lip sync
+            audioQueue.push({
+                url: data.audio_url,
+                text: sentence
+            });
 
             // Start playing if not already playing
             if (!isPlayingAudio) {
@@ -974,15 +977,72 @@ async function generateSentenceTTS(sentence) {
     }
 }
 
-// Play next audio in queue with ANIME-STYLE EXAGGERATED mouth
+// Viseme mouth shapes for phoneme-based lip sync (anime style)
+const VISEMES = {
+    // Closed mouth (M, B, P)
+    CLOSED: 'M 58 74 L 82 74',
+
+    // Wide open (A, AA, AH, AE)
+    WIDE: 'M 48 68 Q 70 95 92 68',
+
+    // Round O (O, OH, OO, OW, W)
+    ROUND_O: 'M 62 68 Q 70 85 78 68',
+
+    // Big Round O (emphasis)
+    BIG_O: 'M 60 65 Q 70 90 80 65',
+
+    // E/EE (E, EH, EE, I, IH, IY, Y)
+    E_SHAPE: 'M 50 70 Q 70 85 90 70',
+
+    // Small open (most consonants, default)
+    SMALL: 'M 55 72 Q 70 80 85 72',
+
+    // F/V (teeth on lower lip)
+    F_SHAPE: 'M 55 72 Q 70 78 85 72',
+
+    // Smile (resting)
+    SMILE: 'M 55 72 Q 70 78 85 72'
+};
+
+// Map phonemes/letters to visemes
+function getVisemeForPhoneme(char) {
+    char = char.toUpperCase();
+
+    // Bilabial stops (closed mouth)
+    if ('MBP'.includes(char)) return VISEMES.CLOSED;
+
+    // Wide open vowels
+    if ('A'.includes(char)) return VISEMES.WIDE;
+
+    // Round vowels
+    if ('OUW'.includes(char)) return VISEMES.ROUND_O;
+
+    // E/I vowels
+    if ('EIY'.includes(char)) return VISEMES.E_SHAPE;
+
+    // Labiodental (F, V)
+    if ('FV'.includes(char)) return VISEMES.F_SHAPE;
+
+    // Default for consonants
+    return VISEMES.SMALL;
+}
+
+// Current sentence being spoken (for lip sync)
+let currentSentenceText = '';
+
+// Play next audio in queue with PHONEME-SYNCED lip animation
 function playNextInQueue() {
     if (audioQueue.length === 0) {
         isPlayingAudio = false;
+        currentSentenceText = '';
         return;
     }
 
     isPlayingAudio = true;
-    const audioUrl = audioQueue.shift();
+    const audioData = audioQueue.shift();
+    const audioUrl = audioData.url;
+    const text = audioData.text;
+    currentSentenceText = text;
 
     const audio = document.getElementById('tts-audio');
     const mouth = document.getElementById('avatar-mouth');
@@ -990,49 +1050,79 @@ function playNextInQueue() {
     audio.src = audioUrl;
     audio.play().catch(err => {
         console.error('Error playing audio:', err);
-        // Continue to next in queue even if this one fails
         playNextInQueue();
     });
 
-    // Animate mouth while speaking - ANIME STYLE with varied shapes!
-    let talkInterval;
-    let mouthState = 0;
-
-    // Different mouth shapes for variety (anime-style)
-    const mouthShapes = [
-        'M 50 72 Q 70 78 90 72',           // Closed smile
-        'M 48 68 Q 70 95 92 68',           // WIDE OPEN (talking)
-        'M 60 72 Q 70 78 80 72',           // Small closed
-        'M 52 70 Q 70 92 88 70',           // Medium open
-        'M 65 70 Q 70 78 75 70',           // Tiny O (for vowels)
-        'M 55 65 Q 70 98 85 65',           // HUGE OPEN (emphasis)
-        'M 62 68 Q 70 82 78 68',           // Round O shape
-    ];
+    let lipSyncInterval;
+    let lipSyncTimeouts = [];
 
     const handlePlay = () => {
-        talkInterval = setInterval(() => {
-            if (mouth) {
-                // Cycle through different mouth shapes for natural speech
-                mouthState = (mouthState + 1) % mouthShapes.length;
-                mouth.setAttribute('d', mouthShapes[mouthState]);
+        // Get audio duration for timing
+        const duration = audio.duration;
+
+        if (duration && text) {
+            // Clear any previous timeouts
+            lipSyncTimeouts.forEach(t => clearTimeout(t));
+            lipSyncTimeouts = [];
+
+            // Simple phoneme-based lip sync
+            const words = text.split(/\s+/);
+            const totalChars = text.replace(/\s+/g, '').length;
+            const msPerChar = (duration * 1000) / totalChars;
+
+            let charIndex = 0;
+
+            // Animate mouth for each character
+            for (const word of words) {
+                for (let i = 0; i < word.length; i++) {
+                    const char = word[i];
+                    const delay = charIndex * msPerChar;
+
+                    const timeout = setTimeout(() => {
+                        if (mouth) {
+                            const viseme = getVisemeForPhoneme(char);
+                            mouth.setAttribute('d', viseme);
+                        }
+                    }, delay);
+
+                    lipSyncTimeouts.push(timeout);
+                    charIndex++;
+                }
+
+                // Add small pause between words
+                charIndex += 0.5;
             }
-        }, 100); // Faster for more dynamic anime-style animation
+        } else {
+            // Fallback to simple open/close if no duration yet
+            let isOpen = false;
+            lipSyncInterval = setInterval(() => {
+                if (mouth) {
+                    mouth.setAttribute('d', isOpen ? VISEMES.WIDE : VISEMES.SMALL);
+                    isOpen = !isOpen;
+                }
+            }, 150);
+        }
     };
 
     const handleEnded = () => {
-        clearInterval(talkInterval);
+        clearInterval(lipSyncInterval);
+        lipSyncTimeouts.forEach(t => clearTimeout(t));
+        lipSyncTimeouts = [];
+
         if (mouth) {
-            mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+            mouth.setAttribute('d', VISEMES.SMILE);
         }
 
-        // Remove event listeners
         audio.removeEventListener('play', handlePlay);
         audio.removeEventListener('ended', handleEnded);
+        audio.removeEventListener('loadedmetadata', handlePlay);
 
-        // Play next in queue
+        currentSentenceText = '';
         playNextInQueue();
     };
 
+    // Try to get duration once metadata loads
+    audio.addEventListener('loadedmetadata', handlePlay);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('ended', handleEnded);
 }
