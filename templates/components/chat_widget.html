@@ -934,13 +934,19 @@ async function sendMessage() {
     ttsNextToAdd = 0;
 
     try {
+        // Get current weather and location if available
+        const weather = window.getCurrentWeather ? window.getCurrentWeather() : null;
+        const location = window.getUserLocationData ? window.getUserLocationData() : null;
+
         // Use fetch with ReadableStream for real-time streaming
         const response = await fetch('/chat/stream', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 message: message,
-                history: chatHistory  // Pass conversation context
+                history: chatHistory,  // Pass conversation context
+                weather: weather,      // Pass current weather data
+                location: location     // Pass user location
             })
         });
 

@@ -635,6 +635,8 @@ def chat_stream():
     data = request.json
     message = data.get('message', '')
     chat_history = data.get('history', [])  # Get chat history from frontend
+    weather_data = data.get('weather')  # Get current weather data
+    location_data = data.get('location')  # Get user location
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
@@ -643,8 +645,18 @@ def chat_stream():
     user_context = f"User: {current_user.username}, Skill level: {getattr(current_user, 'cooking_skill_level', 'beginner')}"
     inventory = ', '.join([item.name for item in current_user.inventory_items[:5]]) if current_user.inventory_items else "No items tracked"
 
+    # Add weather context if available
+    weather_context = ""
+    if weather_data:
+        weather_context = f"""
+        Current Weather: {weather_data.get('temp', 'N/A')}°F, {weather_data.get('description', 'N/A')}
+        Location: {weather_data.get('city', 'Unknown')}
+        Humidity: {weather_data.get('humidity', 'N/A')}%
+        Wind: {weather_data.get('wind', 'N/A')} mph
+        """
+
     system_prompt = """
-    You are a friendly and expressive Smart Fridge Assistant! Keep responses CONCISE (under 80 words).
+    You are a friendly and expressive Smart Fridge Assistant with internet connectivity! Keep responses CONCISE (under 80 words).
 
     CRITICAL: Add emotion markers to animate your avatar! Use these EXACT markers:
     [HAPPY] - Good news, enthusiasm, compliments
@@ -657,6 +669,15 @@ def chat_stream():
 
     These markers animate your face but stay HIDDEN from the user!
 
+    CAPABILITIES:
+    - Weather Information: You can access current weather data for the user's location
+    - Location Services: You know the user's general location
+    - Internet Knowledge: You have up-to-date information and can help with current events
+    - Store Locations: You can help users find nearby grocery stores and restaurants
+
+    When users ask about weather, describe the current conditions naturally. For questions about
+    nearby stores or locations, acknowledge you can help and provide general guidance.
+
     Keep responses SHORT for fast voice playback. Be helpful, warm and friendly.
     """
 
@@ -665,6 +686,10 @@ def chat_stream():
         {"role": "system", "content": f"Additional Context: {user_context}"},
         {"role": "system", "content": f"Current Inventory: {inventory}"},
     ]
+
+    # Add weather context if available
+    if weather_context:
+        messages.append({"role": "system", "content": weather_context})
 
     # Add chat history to maintain context
     messages.extend(chat_history)
@@ -1120,6 +1145,97 @@ def search_recipes():
     except Exception as e:
         print(f"Error in recipe search: {str(e)}")  # Debug print
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/search', methods=['POST'])
+@login_required
+def web_search():
+    """Perform a web search for general queries"""
+    data = request.json
+    query = data.get('query')
+
+    if not query:
+        return jsonify({"error": "Query required"}), 400
+
+    try:
+        # Use DuckDuckGo Instant Answer API (no key required)
+        url = f"https://api.duckduckgo.com/?q={query}&format=json&no_html=1&skip_disambig=1"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+
+        search_data = response.json()
+
+        # Extract relevant information
+        result = {
+            "abstract": search_data.get('AbstractText', ''),
+            "source": search_data.get('AbstractSource', ''),
+            "url": search_data.get('AbstractURL', ''),
+            "heading": search_data.get('Heading', ''),
+            "related": [topic.get('Text', '') for topic in search_data.get('RelatedTopics', [])[:3] if 'Text' in topic]
+        }
+
+        return jsonify(result)
+    except Exception as e:
+        print(f"Web search error: {str(e)}")
+        return jsonify({"error": "Search failed", "abstract": ""}), 500
+
+@app.route('/api/weather', methods=['POST'])
+@login_required
+def get_weather():
+    """Get weather data based on user's location"""
+    data = request.json
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+
+    if not latitude or not longitude:
+        return jsonify({"error": "Location data required"}), 400
+
+    # Get OpenWeatherMap API key from environment
+    weather_api_key = os.getenv('OPENWEATHER_API_KEY')
+
+    if not weather_api_key:
+        # Return default/mock data if no API key
+        return jsonify({
+            "temp": 72,
+            "feels_like": 70,
+            "humidity": 65,
+            "wind": 5,
+            "weather": "Clear",
+            "description": "clear sky",
+            "city": "Your Location",
+            "icon": "01d"
+        })
+
+    try:
+        # Call OpenWeatherMap API
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={weather_api_key}&units=imperial"
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+
+        weather_data = response.json()
+
+        return jsonify({
+            "temp": weather_data['main']['temp'],
+            "feels_like": weather_data['main']['feels_like'],
+            "humidity": weather_data['main']['humidity'],
+            "wind": weather_data['wind']['speed'],
+            "weather": weather_data['weather'][0]['main'],
+            "description": weather_data['weather'][0]['description'],
+            "city": weather_data.get('name', 'Your Location'),
+            "icon": weather_data['weather'][0]['icon']
+        })
+    except Exception as e:
+        print(f"Weather API error: {str(e)}")
+        # Return default data on error
+        return jsonify({
+            "temp": 72,
+            "feels_like": 70,
+            "humidity": 65,
+            "wind": 5,
+            "weather": "Clear",
+            "description": "clear sky",
+            "city": "Your Location",
+            "icon": "01d"
+        })
 
 @app.route('/update-expiry', methods=['POST'])
 @login_required

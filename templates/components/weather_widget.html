@@ -1,0 +1,285 @@
+<!-- Weather Widget Component -->
+<div class="weather-widget" id="weather-widget">
+    <div class="weather-loading" id="weather-loading">
+        <div class="loading-spinner"></div>
+        <p>Getting weather...</p>
+    </div>
+
+    <div class="weather-content hidden" id="weather-content">
+        <div class="weather-icon" id="weather-icon">☀️</div>
+        <div class="weather-details">
+            <div class="weather-temp" id="weather-temp">--°</div>
+            <div class="weather-desc" id="weather-desc">Loading...</div>
+            <div class="weather-location" id="weather-location">--</div>
+        </div>
+        <div class="weather-extras">
+            <div class="weather-extra-item">
+                <span class="extra-icon">💧</span>
+                <span class="extra-value" id="weather-humidity">--%</span>
+            </div>
+            <div class="weather-extra-item">
+                <span class="extra-icon">💨</span>
+                <span class="extra-value" id="weather-wind">-- mph</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="weather-error hidden" id="weather-error">
+        <p>Unable to load weather</p>
+        <button onclick="retryWeather()" class="retry-btn">Retry</button>
+    </div>
+</div>
+
+<style>
+.weather-widget {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.weather-widget::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: weather-pulse 8s ease-in-out infinite;
+}
+
+@keyframes weather-pulse {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-10px, -10px); }
+}
+
+.weather-loading {
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.weather-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    z-index: 1;
+}
+
+.weather-icon {
+    font-size: 64px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.weather-details {
+    flex: 1;
+}
+
+.weather-temp {
+    font-size: 42px;
+    font-weight: bold;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.weather-desc {
+    font-size: 16px;
+    opacity: 0.95;
+    text-transform: capitalize;
+    margin-top: 5px;
+}
+
+.weather-location {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 3px;
+}
+
+.weather-extras {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.weather-extra-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+}
+
+.extra-icon {
+    font-size: 18px;
+}
+
+.weather-error {
+    text-align: center;
+}
+
+.retry-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.retry-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.05);
+}
+
+.hidden {
+    display: none !important;
+}
+</style>
+
+<script>
+// Location and weather state
+let userLocation = null;
+let currentWeather = null;
+
+// Make weather data globally accessible for chat widget
+window.getCurrentWeather = () => currentWeather;
+window.getUserLocationData = () => userLocation;
+
+// Weather icon mapping
+const weatherIcons = {
+    'Clear': '☀️',
+    'Clouds': '☁️',
+    'Rain': '🌧️',
+    'Drizzle': '🌦️',
+    'Thunderstorm': '⛈️',
+    'Snow': '❄️',
+    'Mist': '🌫️',
+    'Fog': '🌫️',
+    'Haze': '🌫️',
+    'Smoke': '🌫️',
+    'Dust': '🌫️',
+    'Sand': '🌫️'
+};
+
+// Get user's location
+function getUserLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation not supported'));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                userLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
+                // Store in localStorage for future use
+                localStorage.setItem('user_location', JSON.stringify(userLocation));
+                resolve(userLocation);
+            },
+            (error) => {
+                // Try to use cached location
+                const cached = localStorage.getItem('user_location');
+                if (cached) {
+                    userLocation = JSON.parse(cached);
+                    resolve(userLocation);
+                } else {
+                    reject(error);
+                }
+            }
+        );
+    });
+}
+
+// Fetch weather data
+async function fetchWeather() {
+    try {
+        const location = await getUserLocation();
+
+        const response = await fetch('/api/weather', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                latitude: location.latitude,
+                longitude: location.longitude
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Weather API failed');
+        }
+
+        const data = await response.json();
+        displayWeather(data);
+    } catch (error) {
+        console.error('Weather error:', error);
+        showWeatherError();
+    }
+}
+
+// Display weather data
+function displayWeather(data) {
+    const icon = weatherIcons[data.weather] || '🌡️';
+
+    // Store weather data globally for chat widget
+    currentWeather = data;
+
+    document.getElementById('weather-icon').textContent = icon;
+    document.getElementById('weather-temp').textContent = `${Math.round(data.temp)}°F`;
+    document.getElementById('weather-desc').textContent = data.description;
+    document.getElementById('weather-location').textContent = data.city;
+    document.getElementById('weather-humidity').textContent = `${data.humidity}%`;
+    document.getElementById('weather-wind').textContent = `${Math.round(data.wind)} mph`;
+
+    document.getElementById('weather-loading').classList.add('hidden');
+    document.getElementById('weather-content').classList.remove('hidden');
+}
+
+// Show error state
+function showWeatherError() {
+    document.getElementById('weather-loading').classList.add('hidden');
+    document.getElementById('weather-error').classList.remove('hidden');
+}
+
+// Retry weather fetch
+function retryWeather() {
+    document.getElementById('weather-error').classList.add('hidden');
+    document.getElementById('weather-loading').classList.remove('hidden');
+    fetchWeather();
+}
+
+// Initialize weather on page load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchWeather();
+
+    // Refresh weather every 30 minutes
+    setInterval(fetchWeather, 30 * 60 * 1000);
+});
+
+// Export location for use by assistant
+window.getUserLocation = getUserLocation;
+</script>
