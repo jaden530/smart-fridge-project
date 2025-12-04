@@ -800,14 +800,85 @@ let ttsSequenceNumber = 0;
 let ttsPendingQueue = new Map(); // Holds TTS results waiting for their turn
 let ttsNextToAdd = 0; // Next sequence number to add to audio queue
 
+// Chat history for context and persistence
+let chatHistory = [];
+const CHAT_HISTORY_KEY = 'smartfridge_chat_history';
+const MAX_HISTORY_MESSAGES = 20; // Keep last 20 messages for context
+
+// Load chat history from localStorage on page load
+function loadChatHistory() {
+    try {
+        const saved = localStorage.getItem(CHAT_HISTORY_KEY);
+        if (saved) {
+            const history = JSON.parse(saved);
+            chatHistory = history.messages || [];
+
+            // Restore messages to UI
+            const messagesDiv = document.getElementById('chat-messages');
+            // Clear initial message
+            messagesDiv.innerHTML = '';
+
+            history.messages.forEach(msg => {
+                if (msg.role === 'user') {
+                    addMessageToUI(msg.content, 'user', false);
+                } else if (msg.role === 'assistant') {
+                    addMessageToUI(msg.content, 'assistant', false);
+                }
+            });
+
+            console.log(`Loaded ${chatHistory.length} messages from history`);
+        }
+    } catch (error) {
+        console.error('Error loading chat history:', error);
+        chatHistory = [];
+    }
+}
+
+// Save chat history to localStorage
+function saveChatHistory() {
+    try {
+        const data = {
+            messages: chatHistory,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(data));
+    } catch (error) {
+        console.error('Error saving chat history:', error);
+    }
+}
+
+// Add message to history and trim if needed
+function addToHistory(role, content) {
+    // Remove emotion markers from history
+    const cleanContent = content.replace(/\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g, '').trim();
+
+    chatHistory.push({
+        role: role,
+        content: cleanContent
+    });
+
+    // Keep only last MAX_HISTORY_MESSAGES
+    if (chatHistory.length > MAX_HISTORY_MESSAGES) {
+        chatHistory = chatHistory.slice(-MAX_HISTORY_MESSAGES);
+    }
+
+    saveChatHistory();
+}
+
+// Load history when page loads
+window.addEventListener('DOMContentLoaded', () => {
+    loadChatHistory();
+});
+
 async function sendMessage() {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
 
     if (!message) return;
 
-    // Add user message to chat
-    addMessage(message, 'user');
+    // Add user message to chat and history
+    addMessageToUI(message, 'user', true);
+    addToHistory('user', message);
     input.value = '';
 
     // Create message container for streaming response
@@ -867,7 +938,10 @@ async function sendMessage() {
         const response = await fetch('/chat/stream', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({
+                message: message,
+                history: chatHistory  // Pass conversation context
+            })
         });
 
         const reader = response.body.getReader();
@@ -892,6 +966,9 @@ async function sendMessage() {
                         generateSentenceTTS(cleanText.trim());
                     }
                 }
+
+                // Save assistant response to history (without emotion markers)
+                addToHistory('assistant', displayText);
 
                 contentDiv.classList.remove('streaming');
                 break;
@@ -1420,7 +1497,8 @@ function animateThinking() {
     }
 }
 
-function addMessage(text, type) {
+// Add message to UI only (separated from history tracking)
+function addMessageToUI(text, type, scrollToBottom = true) {
     const messagesDiv = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}-message`;
@@ -1460,7 +1538,10 @@ function addMessage(text, type) {
     `;
 
     messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    if (scrollToBottom) {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
 }
 
 function showAvatarSpeech(text, duration = 8000) {
