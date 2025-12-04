@@ -487,6 +487,35 @@ def chat():
         }), 503
 
     message = request.json.get('message')
+    generate_audio_only = request.json.get('generate_audio_only', False)
+
+    # If only generating audio (for streaming TTS), skip GPT and just create TTS
+    if generate_audio_only:
+        # Remove emotion markers for TTS (they're visual only)
+        import re
+        clean_message = re.sub(r'\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]', '', message).strip()
+
+        # Generate TTS directly from the provided text
+        speech_response = client.audio.speech.create(
+            model="tts-1",
+            voice="alloy",
+            input=clean_message
+        )
+
+        # Ensure static folder exists
+        os.makedirs(app.static_folder, exist_ok=True)
+
+        # Save audio with unique name
+        audio_filename = f"response_{int(time.time() * 1000)}.mp3"  # Use milliseconds for uniqueness
+        audio_path = os.path.join(app.static_folder, audio_filename)
+        with open(audio_path, "wb") as f:
+            f.write(speech_response.content)
+
+        return jsonify({
+            "audio_url": f"/static/{audio_filename}"
+        })
+
+    # Normal chat flow with GPT
     chat_history = request.json.get('history', [])
     inventory = inventory_manager.get_inventory(current_user.id)
 
@@ -531,7 +560,7 @@ def chat():
     - Safety-conscious
     - Warm and friendly
     """
-    
+
     # Prepare the messages for the GPT model
     messages = [
         {"role": "system", "content": system_prompt},
@@ -546,7 +575,7 @@ def chat():
     # Add chat history and current message
     messages.extend(chat_history)
     messages.append({"role": "user", "content": message})
-    
+
     # Use STREAMING for instant responses!
     stream = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -561,12 +590,16 @@ def chat():
     for chunk in stream:
         if chunk.choices[0].delta.content:
             assistant_response += chunk.choices[0].delta.content
-    
+
+    # Remove emotion markers for TTS
+    import re
+    clean_response = re.sub(r'\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]', '', assistant_response).strip()
+
     # Generate speech from the assistant's response
     speech_response = client.audio.speech.create(
         model="tts-1",
         voice="alloy",
-        input=assistant_response
+        input=clean_response
     )
 
     # Ensure static folder exists (important for PyInstaller bundles)
@@ -584,7 +617,7 @@ def chat():
         "has_technique": any(word in assistant_response.lower() for word in ['technique', 'method', 'step-by-step', 'procedure']),
         "has_suggestion": any(word in assistant_response.lower() for word in ['try', 'suggest', 'recommend', 'might want to']),
     }
-    
+
     return jsonify({
         "response": assistant_response,
         "audio_url": f"/static/{audio_filename}",

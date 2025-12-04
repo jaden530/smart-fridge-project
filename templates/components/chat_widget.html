@@ -618,16 +618,6 @@
     100% { background-position: -200% 0; }
 }
 
-.streaming-text::after {
-    content: '▋';
-    animation: blink-cursor 1s step-end infinite;
-    margin-left: 2px;
-}
-
-@keyframes blink-cursor {
-    50% { opacity: 0; }
-}
-
 .message-content p {
     margin: 0 0 10px 0;
     color: #333;
@@ -984,7 +974,7 @@ async function generateSentenceTTS(sentence) {
     }
 }
 
-// Play next audio in queue
+// Play next audio in queue with ANIME-STYLE EXAGGERATED mouth
 function playNextInQueue() {
     if (audioQueue.length === 0) {
         isPlayingAudio = false;
@@ -1004,21 +994,29 @@ function playNextInQueue() {
         playNextInQueue();
     });
 
-    // Animate mouth while speaking
+    // Animate mouth while speaking - ANIME STYLE with varied shapes!
     let talkInterval;
-    let isOpen = false;
+    let mouthState = 0;
+
+    // Different mouth shapes for variety (anime-style)
+    const mouthShapes = [
+        'M 50 72 Q 70 78 90 72',           // Closed smile
+        'M 48 68 Q 70 95 92 68',           // WIDE OPEN (talking)
+        'M 60 72 Q 70 78 80 72',           // Small closed
+        'M 52 70 Q 70 92 88 70',           // Medium open
+        'M 65 70 Q 70 78 75 70',           // Tiny O (for vowels)
+        'M 55 65 Q 70 98 85 65',           // HUGE OPEN (emphasis)
+        'M 62 68 Q 70 82 78 68',           // Round O shape
+    ];
 
     const handlePlay = () => {
         talkInterval = setInterval(() => {
             if (mouth) {
-                if (isOpen) {
-                    mouth.setAttribute('d', 'M 55 74 Q 70 76 85 74'); // Closed
-                } else {
-                    mouth.setAttribute('d', 'M 52 70 Q 70 88 88 70'); // Open
-                }
-                isOpen = !isOpen;
+                // Cycle through different mouth shapes for natural speech
+                mouthState = (mouthState + 1) % mouthShapes.length;
+                mouth.setAttribute('d', mouthShapes[mouthState]);
             }
-        }, 120);
+        }, 100); // Faster for more dynamic anime-style animation
     };
 
     const handleEnded = () => {
