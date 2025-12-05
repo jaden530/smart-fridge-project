@@ -89,9 +89,20 @@ if not NUTRITIONIX_APP_ID or not NUTRITIONIX_API_KEY:
     print("ℹ️  No Nutritionix API keys - nutrition lookups disabled")
 
 # Setup paths
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# For PyInstaller: check if running as bundled exe
+if getattr(sys, 'frozen', False):
+    # Running as PyInstaller bundle
+    base_dir = sys._MEIPASS
+else:
+    # Running as normal Python script
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 static_folder = os.path.join(base_dir, 'static')
 db_path = os.path.join(base_dir, 'smartfridge.db')
+
+print(f"📁 Base directory: {base_dir}")
+print(f"📁 Static folder: {static_folder}")
+print(f"📁 Static folder exists: {os.path.exists(static_folder)}")
 
 # Database will be created if it doesn't exist, preserved if it does
 
