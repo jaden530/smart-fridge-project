@@ -255,10 +255,12 @@ class AvatarLipSync {
         const container = this.avatarCore.container;
         if (!container) return;
 
-        const mouth = container.querySelector('.mouth-smile');
-        const opening = container.querySelector('.mouth-opening');
-        const teeth = container.querySelector('.mouth-teeth');
-        const tongue = container.querySelector('.mouth-tongue');
+        // Get elements using the containerId prefix
+        const containerId = this.avatarCore.containerId;
+        const mouth = document.getElementById(`${containerId}-avatar-mouth`);
+        const opening = document.getElementById(`${containerId}-mouth-opening`);
+        const teeth = document.getElementById(`${containerId}-mouth-teeth`);
+        const tongue = document.getElementById(`${containerId}-mouth-tongue`);
 
         if (mouth && shape.smilePath) {
             mouth.setAttribute('d', shape.smilePath);
