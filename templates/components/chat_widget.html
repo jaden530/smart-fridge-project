@@ -546,13 +546,20 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeModules() {
+    console.log('🚀 Initializing modular architecture...');
+    console.log('✓ apiService:', typeof apiService);
+    console.log('✓ actionRegistry:', typeof actionRegistry);
+    console.log('✓ AvatarCore:', typeof AvatarCore);
+
     // Initialize Avatar
+    console.log('📱 Creating AvatarCore...');
     avatar = new AvatarCore('avatar-display', {
         size: 140,
         enableEyeTracking: true,
         enableLipSync: true,
         enableEmotions: true
     });
+    console.log('✓ Avatar created:', avatar);
 
     // Initialize TTS Service
     ttsService = new TTSService(apiService);
