@@ -238,6 +238,8 @@ class AvatarLipSync {
         // Update mouth elements
         const mouth = container.querySelector('.mouth-smile');
         const mouthOpening = container.querySelector('.mouth-opening');
+        const teeth = container.querySelector('.mouth-teeth');
+        const tongue = container.querySelector('.mouth-tongue');
 
         if (mouth) {
             mouth.setAttribute('d', shape.shape);
@@ -247,6 +249,19 @@ class AvatarLipSync {
             mouthOpening.setAttribute('rx', shape.mouth.rx);
             mouthOpening.setAttribute('ry', shape.mouth.ry);
             mouthOpening.style.opacity = shape.mouth.opacity;
+        }
+
+        // Show teeth and tongue for larger mouth openings
+        if (teeth) {
+            const teethOpacity = shapeName === 'LARGE' || shapeName === 'WIDE' ? 0.9 :
+                                 shapeName === 'MEDIUM' ? 0.6 : 0;
+            teeth.style.opacity = teethOpacity;
+        }
+
+        if (tongue) {
+            const tongueOpacity = shapeName === 'LARGE' || shapeName === 'WIDE' ? 0.8 :
+                                  shapeName === 'MEDIUM' ? 0.5 : 0;
+            tongue.style.opacity = tongueOpacity;
         }
 
         this.currentShape = shapeName;
