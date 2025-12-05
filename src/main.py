@@ -657,7 +657,7 @@ def chat_stream():
         """
 
     system_prompt = """
-    You are a friendly and expressive Smart Fridge Assistant with internet connectivity! Keep responses CONCISE (under 80 words).
+    You are a friendly and expressive Smart Fridge Assistant with deep integration! Keep responses CONCISE (under 80 words).
 
     CRITICAL: Add emotion markers to animate your avatar! Use these EXACT markers:
     [HAPPY] - Good news, enthusiasm, compliments
@@ -671,31 +671,100 @@ def chat_stream():
     These markers animate your face but stay HIDDEN from the user!
 
     CAPABILITIES:
-    - Weather Information: You can access current weather data for the user's location
-    - Location Services: You know the user's general location
-    - Internet Knowledge: You have up-to-date information and can help with current events
-    - Store Locations: You can help users find nearby grocery stores and restaurants
+    - Navigate to pages and guide users
+    - Add/remove inventory items directly
+    - Trigger features (capture, detect, door-cycle)
+    - Highlight UI elements to show users where things are
+    - Weather information and location services
+    - Internet knowledge and search
 
-    When users ask about weather, describe the current conditions naturally. For questions about
-    nearby stores or locations, acknowledge you can help and provide general guidance.
-
-    Keep responses SHORT for fast voice playback. Be helpful, warm and friendly.
-
-    AVAILABLE ACTIONS:
-    You can perform actions to help users! When you want to:
-    - Navigate to a page: Say "[[NAVIGATE:page_name]]" (e.g., [[NAVIGATE:inventory]])
-    - Highlight UI element: Say "[[HIGHLIGHT:element_id]]" (e.g., [[HIGHLIGHT:capture-btn]])
-    - Add inventory item: Say "[[ADD_ITEM:item_name,quantity,unit]]" (e.g., [[ADD_ITEM:carrot,3,pcs]])
-    - Remove inventory item: Say "[[REMOVE_ITEM:item_name]]"
-    - Trigger feature: Say "[[ACTION:feature_name]]" (e.g., [[ACTION:capture]])
-
-    Pages: dashboard, inventory, users, health-dashboard, recipes, waste-prevention, preferences
-    Features: capture (take photo), detect (detect objects), door-cycle (simulate door open/close)
-
-    Use these actions naturally in conversation! Example:
-    "Let me add that for you! [[ADD_ITEM:carrot,2,pcs]] Done! I've added 2 carrots."
-    "Check the Capture button! [[HIGHLIGHT:capture-btn]] [[NAVIGATE:dashboard]]"
+    Use the available tools/functions to help users perform actions!
+    Keep responses SHORT and friendly for fast voice playback.
     """
+
+    # Define available tools (OpenAI function calling API)
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "navigate_to_page",
+                "description": "Navigate the user to a specific page in the app to show them a feature",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "page": {
+                            "type": "string",
+                            "enum": ["dashboard", "inventory", "users", "health-dashboard", "recipes", "waste-prevention", "preferences", "family"],
+                            "description": "The page to navigate to"
+                        }
+                    },
+                    "required": ["page"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "add_inventory_item",
+                "description": "Add an item to the user's fridge inventory",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "item_name": {"type": "string", "description": "Name of the food item"},
+                        "quantity": {"type": "number", "description": "Quantity", "default": 1},
+                        "unit": {"type": "string", "description": "Unit (pcs, lbs, oz, etc)", "default": "pcs"}
+                    },
+                    "required": ["item_name"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "remove_inventory_item",
+                "description": "Remove an item from the user's fridge inventory",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "item_name": {"type": "string", "description": "Name of the item to remove"}
+                    },
+                    "required": ["item_name"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "highlight_element",
+                "description": "Highlight a UI element with a pulsing glow to show the user where it is",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "element_id": {"type": "string", "description": "ID of element (e.g., 'capture-btn')"}
+                    },
+                    "required": ["element_id"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "trigger_feature",
+                "description": "Trigger a specific app feature or action",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "feature": {
+                            "type": "string",
+                            "enum": ["capture", "detect", "door-cycle"],
+                            "description": "Feature: capture=take photo, detect=detect objects, door-cycle=simulate door"
+                        }
+                    },
+                    "required": ["feature"]
+                }
+            }
+        }
+    ]
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -714,31 +783,80 @@ def chat_stream():
     messages.append({"role": "user", "content": message})
 
     def generate():
-        """Generator function for Server-Sent Events streaming"""
+        """Generator function with OpenAI function calling support"""
         full_response = ""
+        function_calls_data = []
 
         try:
-            # Stream from GPT
+            # Stream from GPT with tools/function calling
             stream = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
+                tools=tools,
+                tool_choice="auto",  # Let GPT decide when to use tools
                 max_tokens=150,
                 temperature=0.8,
                 stream=True
             )
 
-            # Stream chunks to frontend
+            # Track function calls during streaming
+            current_tool_call = None
+            tool_call_id = None
+            function_name = None
+            function_args = ""
+
             for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
+                delta = chunk.choices[0].delta
+
+                # Stream text content to frontend
+                if delta.content:
+                    content = delta.content
                     full_response += content
-                    # Send as Server-Sent Event
                     yield f"data: {content}\n\n"
+
+                # Collect function/tool calls
+                if delta.tool_calls:
+                    for tool_call in delta.tool_calls:
+                        if tool_call.id:
+                            tool_call_id = tool_call.id
+                        if tool_call.function:
+                            if tool_call.function.name:
+                                function_name = tool_call.function.name
+                            if tool_call.function.arguments:
+                                function_args += tool_call.function.arguments
+
+            # Send any function calls to frontend as special events
+            if function_name and function_args:
+                try:
+                    import json
+                    args = json.loads(function_args)
+
+                    # Map function names to frontend action types
+                    action_map = {
+                        "navigate_to_page": {"type": "NAVIGATE", "params": args.get("page", "")},
+                        "add_inventory_item": {
+                            "type": "ADD_ITEM",
+                            "params": f"{args.get('item_name', '')},{args.get('quantity', 1)},{args.get('unit', 'pcs')}"
+                        },
+                        "remove_inventory_item": {"type": "REMOVE_ITEM", "params": args.get("item_name", "")},
+                        "highlight_element": {"type": "HIGHLIGHT", "params": args.get("element_id", "")},
+                        "trigger_feature": {"type": "ACTION", "params": args.get("feature", "")}
+                    }
+
+                    if function_name in action_map:
+                        action = action_map[function_name]
+                        # Send as action event (compatible with existing frontend)
+                        action_str = f"[[{action['type']}:{action['params']}]]"
+                        yield f"data: {action_str}\n\n"
+
+                except Exception as e:
+                    print(f"Function call parsing error: {e}")
 
             # Signal completion
             yield f"event: done\ndata: {full_response}\n\n"
 
         except Exception as e:
+            print(f"Streaming error: {str(e)}")
             yield f"event: error\ndata: {str(e)}\n\n"
 
     return Response(generate(), mimetype='text/event-stream')
