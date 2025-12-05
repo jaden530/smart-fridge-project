@@ -221,7 +221,12 @@ class ApiService {
 // Singleton instance
 const apiService = new ApiService();
 
-// Export for use
+// Export for use (Node.js)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = apiService;
+}
+
+// Make available globally for browsers
+if (typeof window !== 'undefined') {
+    window.apiService = apiService;
 }

@@ -312,7 +312,12 @@ class ActionRegistry {
 // Singleton instance
 const actionRegistry = new ActionRegistry();
 
-// Export
+// Export for use (Node.js)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = actionRegistry;
+}
+
+// Make available globally for browsers
+if (typeof window !== 'undefined') {
+    window.actionRegistry = actionRegistry;
 }
