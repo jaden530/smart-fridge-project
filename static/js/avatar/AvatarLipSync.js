@@ -1,12 +1,8 @@
 /**
- * AvatarLipSync.js - Advanced Lip Sync Engine
+ * AvatarLipSync.js - South Park Style Lip Sync
  *
- * Provides realistic lip sync for avatar with:
- * - Audio analysis (frequency + amplitude)
- * - Phoneme-based mouth shapes
- * - Text-to-phoneme estimation
- * - Smooth transitions between shapes
- * - Integration with AvatarCore
+ * RESTORED from working pre-refactor version
+ * Combines audio volume analysis with character-by-character phoneme mapping
  */
 
 class AvatarLipSync {
@@ -18,132 +14,102 @@ class AvatarLipSync {
         this.analyser = null;
         this.animationFrameId = null;
 
-        // Phoneme mapping
-        this.phonemeMap = this.createPhonemeMap();
+        // Lip sync state
+        this.currentText = '';
+        this.charIndex = 0;
+        this.lastVolume = 0;
+        this.volumeThreshold = 15;
 
-        // Current state
-        this.currentShape = 'SMILE';
-        this.targetShape = 'SMILE';
-        this.transitionProgress = 1;
-
-        // Timing
-        this.lastUpdateTime = 0;
-        this.transitionDuration = 100; // ms
-    }
-
-    /**
-     * Create phoneme to mouth shape mapping
-     */
-    createPhonemeMap() {
-        return {
-            // Closed mouth sounds (M, B, P)
-            'CLOSED': {
-                phonemes: ['M', 'B', 'P'],
-                words: ['me', 'my', 'be', 'by', 'please', 'maybe'],
-                mouth: { rx: 0, ry: 0, opacity: 0 },
-                shape: 'M 60 74 L 80 74',
-                showTeeth: false,
-                showTongue: false
+        // Mouth shapes (ORIGINAL working version)
+        this.MOUTH_SHAPES = {
+            // Bilabial (M, B, P) - Lips closed
+            CLOSED: {
+                smilePath: 'M 58 74 L 82 74',
+                smileVisible: true,
+                opening: { opacity: 0, rx: 0, ry: 0 },
+                teeth: { visible: false },
+                tongue: { visible: false }
             },
 
-            // Small opening (EE, I sounds)
-            'SMALL': {
-                phonemes: ['IY', 'IH', 'EY'],
-                words: ['see', 'it', 'is', 'in', 'this', 'we', 'me'],
-                mouth: { rx: 12, ry: 6, opacity: 0.7 },
-                shape: 'M 60 74 Q 70 80 80 74',
-                showTeeth: false,
-                showTongue: false
+            // Open vowels (A, AH) - Wide open
+            WIDE: {
+                smilePath: 'M 52 70 Q 70 72 88 70',
+                smileVisible: true,
+                opening: { opacity: 1, rx: 13, ry: 9, cy: 77 },
+                teeth: { visible: false },
+                tongue: { visible: false }
             },
 
-            // Medium opening (EH, AE, UH sounds)
-            'MEDIUM': {
-                phonemes: ['EH', 'AE', 'AH', 'UH'],
-                words: ['get', 'can', 'and', 'that', 'up', 'just'],
-                mouth: { rx: 24, ry: 12, opacity: 0.85 },
-                shape: 'M 58 72 Q 70 85 82 72',
-                showTeeth: false,
-                showTongue: false
+            // Round vowels (O, OO, W) - Round opening
+            ROUND: {
+                smilePath: 'M 60 72 Q 70 73 80 72',
+                smileVisible: true,
+                opening: { opacity: 1, rx: 8, ry: 8, cy: 76 },
+                teeth: { visible: false },
+                tongue: { visible: false }
             },
 
-            // Large opening (AA, AO sounds)
-            'LARGE': {
-                phonemes: ['AA', 'AO', 'AW'],
-                words: ['not', 'all', 'are', 'on', 'what', 'how'],
-                mouth: { rx: 36, ry: 24, opacity: 1.0 },
-                shape: 'M 56 68 Q 70 92 84 68',
-                showTeeth: false,
-                showTongue: false
+            // E/I vowels - Smile with opening
+            E_SHAPE: {
+                smilePath: 'M 54 71 Q 70 75 86 71',
+                smileVisible: true,
+                opening: { opacity: 1, rx: 11, ry: 6, cy: 76 },
+                teeth: { visible: false },
+                tongue: { visible: false }
             },
 
-            // Wide opening (AY, OW sounds)
-            'WIDE': {
-                phonemes: ['AY', 'OW', 'OY'],
-                words: ['I', 'my', 'now', 'how', 'go', 'so', 'oh'],
-                mouth: { rx: 42, ry: 18, opacity: 0.9 },
-                shape: 'M 54 72 Q 70 90 86 72',
-                showTeeth: false,
-                showTongue: false
+            // TH sound - Teeth visible, tongue between
+            TH_SOUND: {
+                smilePath: 'M 56 72 Q 70 74 84 72',
+                smileVisible: true,
+                opening: { opacity: 0.6, rx: 9, ry: 5, cy: 76 },
+                teeth: { visible: true, opacity: 1 },
+                tongue: { visible: true, opacity: 0.9, cy: 76, ry: 2 }
             },
 
-            // Rounded (OO, UW sounds)
-            'ROUND': {
-                phonemes: ['UW', 'OW', 'OO'],
-                words: ['you', 'to', 'too', 'do', 'who', 'through'],
-                mouth: { rx: 18, ry: 24, opacity: 0.85 },
-                shape: 'M 62 70 Q 70 86 78 70',
-                showTeeth: false,
-                showTongue: false
+            // F/V sound - Teeth on lower lip
+            F_SOUND: {
+                smilePath: 'M 58 73 Q 70 75 82 73',
+                smileVisible: true,
+                opening: { opacity: 0.5, rx: 8, ry: 4, cy: 76 },
+                teeth: { visible: true, opacity: 0.9, y: 74 },
+                tongue: { visible: false }
             },
 
-            // F/V sounds - TEETH VISIBLE (South Park style)
-            'FV': {
-                phonemes: ['F', 'V'],
-                words: ['for', 'from', 'have', 'of', 'very', 'if', 'five', 'food'],
-                mouth: { rx: 15, ry: 6, opacity: 0.7 },
-                shape: 'M 60 70 L 80 70',
-                showTeeth: true,
-                showTongue: false
+            // S sound - Teeth visible, narrow opening
+            S_SOUND: {
+                smilePath: 'M 56 73 Q 70 74 84 73',
+                smileVisible: true,
+                opening: { opacity: 0.7, rx: 10, ry: 3, cy: 75 },
+                teeth: { visible: true, opacity: 1 },
+                tongue: { visible: false }
             },
 
-            // L sounds - TONGUE VISIBLE (South Park style)
-            'L': {
-                phonemes: ['L'],
-                words: ['let', 'like', 'will', 'all', 'well', 'let\'s', 'hello'],
-                mouth: { rx: 18, ry: 9, opacity: 0.75 },
-                shape: 'M 60 72 Q 70 82 80 72',
-                showTeeth: false,
-                showTongue: true
+            // L sound - Tongue visible
+            L_SOUND: {
+                smilePath: 'M 56 72 Q 70 76 84 72',
+                smileVisible: true,
+                opening: { opacity: 0.8, rx: 9, ry: 5, cy: 76 },
+                teeth: { visible: false },
+                tongue: { visible: true, opacity: 0.8, cy: 75, ry: 2 }
             },
 
-            // TH sounds - TEETH + TONGUE (South Park style)
-            'TH': {
-                phonemes: ['TH', 'DH'],
-                words: ['the', 'that', 'this', 'with', 'there', 'they', 'them'],
-                mouth: { rx: 16, ry: 8, opacity: 0.7 },
-                shape: 'M 60 72 Q 70 80 80 72',
-                showTeeth: true,
-                showTongue: true
+            // Small opening (default consonants)
+            SMALL: {
+                smilePath: 'M 56 72 Q 70 76 84 72',
+                smileVisible: true,
+                opening: { opacity: 0.8, rx: 7, ry: 5, cy: 76 },
+                teeth: { visible: false },
+                tongue: { visible: false }
             },
 
-            // T/D sounds - TONGUE VISIBLE
-            'TD': {
-                phonemes: ['T', 'D', 'N'],
-                words: ['to', 'do', 'it', 'and', 'not', 'need', 'now', 'then'],
-                mouth: { rx: 14, ry: 7, opacity: 0.7 },
-                shape: 'M 60 73 Q 70 80 80 73',
-                showTeeth: false,
-                showTongue: true
-            },
-
-            // Default smile
-            'SMILE': {
-                phonemes: [],
-                words: [],
-                mouth: { rx: 0, ry: 0, opacity: 0 },
-                shape: 'M 55 72 Q 70 78 85 72',
-                showTeeth: false,
-                showTongue: false
+            // Resting smile
+            SMILE: {
+                smilePath: 'M 55 72 Q 70 78 85 72',
+                smileVisible: true,
+                opening: { opacity: 0, rx: 0, ry: 0 },
+                teeth: { visible: false },
+                tongue: { visible: false }
             }
         };
     }
@@ -156,7 +122,6 @@ class AvatarLipSync {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = 256;
-            this.analyser.smoothingTimeConstant = 0.8;
 
             const source = this.audioContext.createMediaElementSource(audioElement);
             source.connect(this.analyser);
@@ -173,11 +138,12 @@ class AvatarLipSync {
             this.init(audioElement);
         }
 
-        // Parse text into phoneme sequence
-        const phonemeSequence = this.textToPhonemes(text);
+        this.currentText = text.replace(/\s+/g, ''); // Remove spaces
+        this.charIndex = 0;
+        this.lastVolume = 0;
 
         // Start animation loop
-        this.animate(phonemeSequence);
+        this.animate();
     }
 
     /**
@@ -190,47 +156,37 @@ class AvatarLipSync {
         }
 
         // Return to smile
-        this.setMouthShape('SMILE');
+        this.setMouthShape(this.MOUTH_SHAPES.SMILE);
+
+        this.currentText = '';
+        this.charIndex = 0;
     }
 
     /**
-     * Convert text to estimated phoneme sequence
+     * Map character to phoneme shape
      */
-    textToPhonemes(text) {
-        const words = text.toLowerCase().split(/\s+/);
-        const sequence = [];
+    getPhonemeShape(char) {
+        char = char.toUpperCase();
 
-        for (const word of words) {
-            // Find matching phoneme category
-            let foundMatch = false;
+        // Specific consonants
+        if ('MBP'.includes(char)) return this.MOUTH_SHAPES.CLOSED;
+        if ('FV'.includes(char)) return this.MOUTH_SHAPES.F_SOUND;
+        if ('SZ'.includes(char)) return this.MOUTH_SHAPES.S_SOUND;
+        if ('L'.includes(char)) return this.MOUTH_SHAPES.L_SOUND;
 
-            for (const [shapeName, data] of Object.entries(this.phonemeMap)) {
-                if (data.words.some(w => word.includes(w))) {
-                    sequence.push({
-                        shape: shapeName,
-                        duration: word.length * 80 // Approximate duration
-                    });
-                    foundMatch = true;
-                    break;
-                }
-            }
+        // Vowels
+        if ('A'.includes(char)) return this.MOUTH_SHAPES.WIDE;
+        if ('OUW'.includes(char)) return this.MOUTH_SHAPES.ROUND;
+        if ('EIY'.includes(char)) return this.MOUTH_SHAPES.E_SHAPE;
 
-            // Default to MEDIUM if no match
-            if (!foundMatch) {
-                sequence.push({
-                    shape: 'MEDIUM',
-                    duration: word.length * 80
-                });
-            }
-        }
-
-        return sequence;
+        // Default
+        return this.MOUTH_SHAPES.SMALL;
     }
 
     /**
-     * Main animation loop
+     * Main animation loop - combines audio volume with text phonemes
      */
-    animate(phonemeSequence = null) {
+    animate() {
         if (!this.analyser) return;
 
         const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
@@ -238,67 +194,98 @@ class AvatarLipSync {
 
         // Calculate average volume
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        const normalizedVolume = average / 255;
 
-        // Determine mouth shape based on volume (lowered thresholds for more visible movement)
-        let targetShape = 'SMILE';
+        // Detect significant volume change (new sound)
+        if (Math.abs(average - this.lastVolume) > this.volumeThreshold) {
+            // Move to next character when sound changes
+            if (this.charIndex < this.currentText.length && average > 10) {
+                this.charIndex++;
+            }
+        }
+        this.lastVolume = average;
 
-        if (normalizedVolume > 0.02) {
-            // Speaking - use volume to determine shape
-            if (normalizedVolume > 0.25) {
-                targetShape = 'LARGE';
-            } else if (normalizedVolume > 0.15) {
-                targetShape = 'MEDIUM';
-            } else if (normalizedVolume > 0.08) {
-                targetShape = 'SMALL';
+        // Determine mouth shape based on current character + volume
+        let shape;
+
+        if (average < 10) {
+            // Silent - close mouth
+            shape = this.MOUTH_SHAPES.CLOSED;
+        } else if (this.charIndex < this.currentText.length) {
+            // Use phoneme from text
+            const currentChar = this.currentText[this.charIndex];
+            const nextChar = this.currentText[this.charIndex + 1];
+
+            // Check for TH combination
+            if (currentChar === 'T' && nextChar === 'H') {
+                shape = this.MOUTH_SHAPES.TH_SOUND;
+                this.charIndex++; // Skip H
             } else {
-                targetShape = 'SMALL';
+                shape = this.getPhonemeShape(currentChar);
+            }
+
+            // Adjust opening size based on volume
+            if (shape.opening && average > 20) {
+                shape = {...shape}; // Clone
+                shape.opening = {...shape.opening}; // Clone opening
+                const volumeMultiplier = Math.min(average / 50, 1.5);
+                shape.opening.rx *= volumeMultiplier;
+                shape.opening.ry *= volumeMultiplier;
+            }
+        } else {
+            // Past end of text, use volume-based
+            if (average < 30) {
+                shape = this.MOUTH_SHAPES.SMALL;
+            } else if (average < 60) {
+                shape = this.MOUTH_SHAPES.ROUND;
+            } else {
+                shape = this.MOUTH_SHAPES.WIDE;
             }
         }
 
-        // Update mouth shape
-        this.setMouthShape(targetShape);
+        this.setMouthShape(shape);
 
         // Continue animation
-        this.animationFrameId = requestAnimationFrame(() => this.animate(phonemeSequence));
+        this.animationFrameId = requestAnimationFrame(() => this.animate());
     }
 
     /**
-     * Set mouth shape with smooth transition
+     * Apply mouth shape to avatar
      */
-    setMouthShape(shapeName) {
-        const shape = this.phonemeMap[shapeName];
-        if (!shape) return;
-
+    setMouthShape(shape) {
         const container = this.avatarCore.container;
         if (!container) return;
 
-        // Update mouth elements
         const mouth = container.querySelector('.mouth-smile');
-        const mouthOpening = container.querySelector('.mouth-opening');
+        const opening = container.querySelector('.mouth-opening');
         const teeth = container.querySelector('.mouth-teeth');
         const tongue = container.querySelector('.mouth-tongue');
 
-        if (mouth) {
-            mouth.setAttribute('d', shape.shape);
+        if (mouth && shape.smilePath) {
+            mouth.setAttribute('d', shape.smilePath);
+            mouth.style.opacity = shape.smileVisible ? '1' : '0';
         }
 
-        if (mouthOpening) {
-            mouthOpening.setAttribute('rx', shape.mouth.rx);
-            mouthOpening.setAttribute('ry', shape.mouth.ry);
-            mouthOpening.style.opacity = shape.mouth.opacity;
+        if (opening && shape.opening) {
+            opening.setAttribute('opacity', shape.opening.opacity);
+            opening.setAttribute('rx', shape.opening.rx);
+            opening.setAttribute('ry', shape.opening.ry);
+            if (shape.opening.cy) opening.setAttribute('cy', shape.opening.cy);
         }
 
-        // Show teeth and tongue only for specific phonemes (South Park style)
         if (teeth) {
-            teeth.style.opacity = shape.showTeeth ? 0.9 : 0;
+            teeth.setAttribute('opacity', shape.teeth.visible ? (shape.teeth.opacity || 1) : 0);
+            if (shape.teeth.y) {
+                teeth.querySelectorAll('rect').forEach(rect => {
+                    rect.setAttribute('y', shape.teeth.y);
+                });
+            }
         }
 
         if (tongue) {
-            tongue.style.opacity = shape.showTongue ? 0.85 : 0;
+            tongue.setAttribute('opacity', shape.tongue.visible ? (shape.tongue.opacity || 0.8) : 0);
+            if (shape.tongue.cy) tongue.setAttribute('cy', shape.tongue.cy);
+            if (shape.tongue.ry) tongue.setAttribute('ry', shape.tongue.ry);
         }
-
-        this.currentShape = shapeName;
     }
 
     /**
@@ -311,16 +298,6 @@ class AvatarLipSync {
             this.audioContext.close();
             this.audioContext = null;
         }
-    }
-
-    /**
-     * Get current state
-     */
-    getState() {
-        return {
-            currentShape: this.currentShape,
-            isAnimating: !!this.animationFrameId
-        };
     }
 }
 
