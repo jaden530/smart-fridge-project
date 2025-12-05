@@ -148,8 +148,8 @@ class ChatService {
      * Process a single message chunk
      */
     async processMessageChunk(chunk) {
-        // Check for emotion tags [[EMOTION:value]]
-        const emotionMatch = chunk.match(/\[\[EMOTION:(.*?)\]\]/);
+        // Check for emotion tags [EMOTION] (single brackets)
+        const emotionMatch = chunk.match(/\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED|NEUTRAL)\]/);
         if (emotionMatch) {
             const emotion = emotionMatch[1];
             this.currentEmotion = emotion;
@@ -160,7 +160,7 @@ class ChatService {
             return; // Don't add emotion tags to message
         }
 
-        // Check for action tags [[ACTION_TYPE:params]]
+        // Check for action tags [[ACTION_TYPE:params]] (double brackets)
         const actionMatch = chunk.match(/\[\[(.*?):(.*?)\]\]/);
         if (actionMatch) {
             const [, actionType, params] = actionMatch;

@@ -44,60 +44,60 @@ class AvatarLipSync {
                 shape: 'M 60 74 L 80 74'
             },
 
-            // Small opening (EE, I sounds)
+            // Small opening (EE, I sounds) - 3x bigger
             'SMALL': {
                 phonemes: ['IY', 'IH', 'EY'],
                 words: ['see', 'it', 'is', 'in', 'this', 'we', 'me'],
-                mouth: { rx: 4, ry: 2, opacity: 0.3 },
-                shape: 'M 60 74 Q 70 76 80 74'
+                mouth: { rx: 12, ry: 6, opacity: 0.7 },
+                shape: 'M 60 74 Q 70 80 80 74'
             },
 
-            // Medium opening (EH, AE, UH sounds)
+            // Medium opening (EH, AE, UH sounds) - 3x bigger
             'MEDIUM': {
                 phonemes: ['EH', 'AE', 'AH', 'UH'],
                 words: ['get', 'can', 'and', 'that', 'up', 'just'],
-                mouth: { rx: 8, ry: 4, opacity: 0.6 },
-                shape: 'M 58 72 Q 70 78 82 72'
+                mouth: { rx: 24, ry: 12, opacity: 0.85 },
+                shape: 'M 58 72 Q 70 85 82 72'
             },
 
-            // Large opening (AA, AO sounds)
+            // Large opening (AA, AO sounds) - 3x bigger
             'LARGE': {
                 phonemes: ['AA', 'AO', 'AW'],
                 words: ['not', 'all', 'are', 'on', 'what', 'how'],
-                mouth: { rx: 12, ry: 8, opacity: 0.9 },
-                shape: 'M 56 70 Q 70 82 84 70'
+                mouth: { rx: 36, ry: 24, opacity: 1.0 },
+                shape: 'M 56 68 Q 70 92 84 68'
             },
 
-            // Wide opening (AY, OW sounds)
+            // Wide opening (AY, OW sounds) - 3x bigger
             'WIDE': {
                 phonemes: ['AY', 'OW', 'OY'],
                 words: ['I', 'my', 'now', 'how', 'go', 'so', 'oh'],
-                mouth: { rx: 14, ry: 6, opacity: 0.8 },
-                shape: 'M 54 74 Q 70 84 86 74'
+                mouth: { rx: 42, ry: 18, opacity: 0.9 },
+                shape: 'M 54 72 Q 70 90 86 72'
             },
 
-            // Rounded (OO, UW sounds)
+            // Rounded (OO, UW sounds) - 3x bigger
             'ROUND': {
                 phonemes: ['UW', 'OW', 'OO'],
                 words: ['you', 'to', 'too', 'do', 'who', 'through'],
-                mouth: { rx: 6, ry: 8, opacity: 0.7 },
-                shape: 'M 62 72 Q 70 80 78 72'
+                mouth: { rx: 18, ry: 24, opacity: 0.85 },
+                shape: 'M 62 70 Q 70 86 78 70'
             },
 
-            // F/V sounds (teeth on lip)
+            // F/V sounds (teeth on lip) - 3x bigger
             'FV': {
                 phonemes: ['F', 'V'],
                 words: ['for', 'from', 'have', 'of', 'very', 'if'],
-                mouth: { rx: 5, ry: 2, opacity: 0.4 },
-                shape: 'M 60 71 L 80 71'
+                mouth: { rx: 15, ry: 6, opacity: 0.7 },
+                shape: 'M 60 70 L 80 70'
             },
 
-            // L sounds
+            // L sounds - 3x bigger
             'L': {
                 phonemes: ['L'],
                 words: ['let', 'like', 'will', 'all', 'well'],
-                mouth: { rx: 6, ry: 3, opacity: 0.5 },
-                shape: 'M 60 73 Q 70 77 80 73'
+                mouth: { rx: 18, ry: 9, opacity: 0.75 },
+                shape: 'M 60 72 Q 70 82 80 72'
             },
 
             // Default smile
@@ -202,16 +202,16 @@ class AvatarLipSync {
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
         const normalizedVolume = average / 255;
 
-        // Determine mouth shape based on volume
+        // Determine mouth shape based on volume (lowered thresholds for more visible movement)
         let targetShape = 'SMILE';
 
-        if (normalizedVolume > 0.15) {
+        if (normalizedVolume > 0.02) {
             // Speaking - use volume to determine shape
-            if (normalizedVolume > 0.5) {
+            if (normalizedVolume > 0.25) {
                 targetShape = 'LARGE';
-            } else if (normalizedVolume > 0.35) {
+            } else if (normalizedVolume > 0.15) {
                 targetShape = 'MEDIUM';
-            } else if (normalizedVolume > 0.2) {
+            } else if (normalizedVolume > 0.08) {
                 targetShape = 'SMALL';
             } else {
                 targetShape = 'SMALL';
