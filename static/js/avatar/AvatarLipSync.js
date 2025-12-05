@@ -36,68 +36,104 @@ class AvatarLipSync {
      */
     createPhonemeMap() {
         return {
-            // Closed mouth sounds
+            // Closed mouth sounds (M, B, P)
             'CLOSED': {
                 phonemes: ['M', 'B', 'P'],
                 words: ['me', 'my', 'be', 'by', 'please', 'maybe'],
                 mouth: { rx: 0, ry: 0, opacity: 0 },
-                shape: 'M 60 74 L 80 74'
+                shape: 'M 60 74 L 80 74',
+                showTeeth: false,
+                showTongue: false
             },
 
-            // Small opening (EE, I sounds) - 3x bigger
+            // Small opening (EE, I sounds)
             'SMALL': {
                 phonemes: ['IY', 'IH', 'EY'],
                 words: ['see', 'it', 'is', 'in', 'this', 'we', 'me'],
                 mouth: { rx: 12, ry: 6, opacity: 0.7 },
-                shape: 'M 60 74 Q 70 80 80 74'
+                shape: 'M 60 74 Q 70 80 80 74',
+                showTeeth: false,
+                showTongue: false
             },
 
-            // Medium opening (EH, AE, UH sounds) - 3x bigger
+            // Medium opening (EH, AE, UH sounds)
             'MEDIUM': {
                 phonemes: ['EH', 'AE', 'AH', 'UH'],
                 words: ['get', 'can', 'and', 'that', 'up', 'just'],
                 mouth: { rx: 24, ry: 12, opacity: 0.85 },
-                shape: 'M 58 72 Q 70 85 82 72'
+                shape: 'M 58 72 Q 70 85 82 72',
+                showTeeth: false,
+                showTongue: false
             },
 
-            // Large opening (AA, AO sounds) - 3x bigger
+            // Large opening (AA, AO sounds)
             'LARGE': {
                 phonemes: ['AA', 'AO', 'AW'],
                 words: ['not', 'all', 'are', 'on', 'what', 'how'],
                 mouth: { rx: 36, ry: 24, opacity: 1.0 },
-                shape: 'M 56 68 Q 70 92 84 68'
+                shape: 'M 56 68 Q 70 92 84 68',
+                showTeeth: false,
+                showTongue: false
             },
 
-            // Wide opening (AY, OW sounds) - 3x bigger
+            // Wide opening (AY, OW sounds)
             'WIDE': {
                 phonemes: ['AY', 'OW', 'OY'],
                 words: ['I', 'my', 'now', 'how', 'go', 'so', 'oh'],
                 mouth: { rx: 42, ry: 18, opacity: 0.9 },
-                shape: 'M 54 72 Q 70 90 86 72'
+                shape: 'M 54 72 Q 70 90 86 72',
+                showTeeth: false,
+                showTongue: false
             },
 
-            // Rounded (OO, UW sounds) - 3x bigger
+            // Rounded (OO, UW sounds)
             'ROUND': {
                 phonemes: ['UW', 'OW', 'OO'],
                 words: ['you', 'to', 'too', 'do', 'who', 'through'],
                 mouth: { rx: 18, ry: 24, opacity: 0.85 },
-                shape: 'M 62 70 Q 70 86 78 70'
+                shape: 'M 62 70 Q 70 86 78 70',
+                showTeeth: false,
+                showTongue: false
             },
 
-            // F/V sounds (teeth on lip) - 3x bigger
+            // F/V sounds - TEETH VISIBLE (South Park style)
             'FV': {
                 phonemes: ['F', 'V'],
-                words: ['for', 'from', 'have', 'of', 'very', 'if'],
+                words: ['for', 'from', 'have', 'of', 'very', 'if', 'five', 'food'],
                 mouth: { rx: 15, ry: 6, opacity: 0.7 },
-                shape: 'M 60 70 L 80 70'
+                shape: 'M 60 70 L 80 70',
+                showTeeth: true,
+                showTongue: false
             },
 
-            // L sounds - 3x bigger
+            // L sounds - TONGUE VISIBLE (South Park style)
             'L': {
                 phonemes: ['L'],
-                words: ['let', 'like', 'will', 'all', 'well'],
+                words: ['let', 'like', 'will', 'all', 'well', 'let\'s', 'hello'],
                 mouth: { rx: 18, ry: 9, opacity: 0.75 },
-                shape: 'M 60 72 Q 70 82 80 72'
+                shape: 'M 60 72 Q 70 82 80 72',
+                showTeeth: false,
+                showTongue: true
+            },
+
+            // TH sounds - TEETH + TONGUE (South Park style)
+            'TH': {
+                phonemes: ['TH', 'DH'],
+                words: ['the', 'that', 'this', 'with', 'there', 'they', 'them'],
+                mouth: { rx: 16, ry: 8, opacity: 0.7 },
+                shape: 'M 60 72 Q 70 80 80 72',
+                showTeeth: true,
+                showTongue: true
+            },
+
+            // T/D sounds - TONGUE VISIBLE
+            'TD': {
+                phonemes: ['T', 'D', 'N'],
+                words: ['to', 'do', 'it', 'and', 'not', 'need', 'now', 'then'],
+                mouth: { rx: 14, ry: 7, opacity: 0.7 },
+                shape: 'M 60 73 Q 70 80 80 73',
+                showTeeth: false,
+                showTongue: true
             },
 
             // Default smile
@@ -105,7 +141,9 @@ class AvatarLipSync {
                 phonemes: [],
                 words: [],
                 mouth: { rx: 0, ry: 0, opacity: 0 },
-                shape: 'M 55 72 Q 70 78 85 72'
+                shape: 'M 55 72 Q 70 78 85 72',
+                showTeeth: false,
+                showTongue: false
             }
         };
     }
@@ -251,17 +289,13 @@ class AvatarLipSync {
             mouthOpening.style.opacity = shape.mouth.opacity;
         }
 
-        // Show teeth and tongue for larger mouth openings
+        // Show teeth and tongue only for specific phonemes (South Park style)
         if (teeth) {
-            const teethOpacity = shapeName === 'LARGE' || shapeName === 'WIDE' ? 0.9 :
-                                 shapeName === 'MEDIUM' ? 0.6 : 0;
-            teeth.style.opacity = teethOpacity;
+            teeth.style.opacity = shape.showTeeth ? 0.9 : 0;
         }
 
         if (tongue) {
-            const tongueOpacity = shapeName === 'LARGE' || shapeName === 'WIDE' ? 0.8 :
-                                  shapeName === 'MEDIUM' ? 0.5 : 0;
-            tongue.style.opacity = tongueOpacity;
+            tongue.style.opacity = shape.showTongue ? 0.85 : 0;
         }
 
         this.currentShape = shapeName;
