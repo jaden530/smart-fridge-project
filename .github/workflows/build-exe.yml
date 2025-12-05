@@ -1,0 +1,117 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main, claude/** ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+
+    - name: Download YOLOv3 models (temporary)
+      run: |
+        New-Item -ItemType Directory -Force -Path model_data
+        curl -L https://pjreddie.com/media/files/yolov3.weights -o model_data/yolov3.weights
+        curl -L https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -o model_data/yolov3.cfg
+        curl -L https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -o model_data/coco.names
+      shell: pwsh
+
+    - name: Build executable
+      run: |
+        pyinstaller build_exe.spec
+
+    - name: Get version
+      id: version
+      run: |
+        $date = Get-Date -Format "yyyy.MM.dd"
+        echo "VERSION=$date" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Create release package
+      run: |
+        New-Item -ItemType Directory -Force -Path release
+        Copy-Item dist/SmartFridge.exe release/
+        Copy-Item README.md release/
+        Copy-Item WINDOWS_QUICKSTART.md release/
+        Copy-Item .env.example release/ -ErrorAction SilentlyContinue
+        Compress-Archive -Path release/* -DestinationPath SmartFridge-Windows.zip
+      shell: pwsh
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SmartFridge-Windows
+        path: SmartFridge-Windows.zip
+        retention-days: 90
+
+    # Create GitHub Release on tag push
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          SmartFridge-Windows.zip
+          dist/SmartFridge.exe
+        body: |
+          ## Smart Fridge v${{ steps.version.outputs.VERSION }}
+
+          ### 🎉 Download and Run!
+
+          **For Windows:**
+          1. Download `SmartFridge.exe`
+          2. Double-click to run
+          3. No installation needed!
+
+          **Or download the full package:**
+          - `SmartFridge-Windows.zip` includes exe + documentation
+
+          ### ✨ Features
+          - 🎯 Facial Recognition (multi-user)
+          - 📸 Before/After Inventory Detection
+          - 🤖 Animated AI Avatar
+          - 🔍 YOLOv12 Object Detection
+          - 📊 Health & Nutrition Tracking
+          - 🍳 Recipe Suggestions
+          - ♻️ Waste Prevention Alerts
+          - 👨‍👩‍👧‍👦 Family Management
+
+          ### 📋 Requirements
+          - Windows 10/11
+          - 2x USB Webcams (recommended)
+          - 4GB RAM minimum
+
+          ### 🚀 Quick Start
+          1. Connect webcams
+          2. Run SmartFridge.exe
+          3. Login: testuser / testpassword
+          4. Enroll your face
+          5. Start tracking your fridge!
+
+          ### 📖 Documentation
+          - [Windows Quick Start Guide](WINDOWS_QUICKSTART.md)
+          - [Setup Guide](SETUP_GUIDE.md)
+          - [Development Status](DEVELOPMENT_STATUS.md)
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

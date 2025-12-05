@@ -1,0 +1,2133 @@
+<!-- Avatar and Chat Widget Component -->
+<div id="avatar-chat-widget" class="avatar-chat-widget">
+    <!-- Avatar Display -->
+    <div class="avatar-container" id="avatar-display" onclick="pokeAvatar()">
+        <svg width="140" height="140" viewBox="0 0 140 140" id="avatar-svg">
+            <!-- Glow effect -->
+            <defs>
+                <radialGradient id="glow">
+                    <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.8"/>
+                    <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                </radialGradient>
+                <filter id="blur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+                </filter>
+            </defs>
+
+            <!-- Background circle for better visibility -->
+            <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)" class="avatar-background"/>
+
+            <!-- Glow background (pulses) -->
+            <circle cx="70" cy="70" r="60" fill="url(#glow)" class="avatar-glow"/>
+
+            <!-- Body -->
+            <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50" class="avatar-body"/>
+
+            <!-- Head -->
+            <circle cx="70" cy="60" r="35" fill="#2196F3" class="avatar-head"/>
+
+            <!-- Facial features container -->
+            <g class="avatar-face">
+                <!-- Eyes (blink together using opacity) -->
+                <g class="eyes-container">
+                    <!-- Left eye -->
+                    <g class="eye-left eyes-blink">
+                        <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                        <circle cx="58" cy="55" r="4" fill="#333" class="avatar-pupil-left"/>
+                    </g>
+                    <!-- Right eye -->
+                    <g class="eye-right eyes-blink">
+                        <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                        <circle cx="82" cy="55" r="4" fill="#333" class="avatar-pupil-right"/>
+                    </g>
+                </g>
+
+                <!-- Eyebrows -->
+                <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-left"/>
+                <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round" class="eyebrow-right"/>
+
+                <!-- Mouth - Anime/cartoon style with teeth and tongue -->
+                <!-- Mouth opening (dark interior) -->
+                <ellipse id="mouth-opening" cx="70" cy="76" rx="0" ry="0" fill="#2d2d2d" opacity="0"/>
+
+                <!-- Teeth (shown for specific sounds like TH, S) -->
+                <g id="mouth-teeth" opacity="0">
+                    <rect x="64" y="73" width="3" height="4" fill="white" rx="1"/>
+                    <rect x="67.5" y="73" width="3" height="4" fill="white" rx="1"/>
+                    <rect x="71" y="73" width="3" height="4" fill="white" rx="1"/>
+                </g>
+
+                <!-- Tongue (shown for TH, L sounds) -->
+                <ellipse id="mouth-tongue" cx="70" cy="78" rx="5" ry="3" fill="#ff6b9d" opacity="0"/>
+
+                <!-- Mouth smile line (main visible element) -->
+                <path id="avatar-mouth" d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+                <!-- Blush (appears when happy) -->
+                <circle cx="48" cy="67" r="5" fill="#ff6b9d" opacity="0" class="blush-left"/>
+                <circle cx="92" cy="67" r="5" fill="#ff6b9d" opacity="0" class="blush-right"/>
+            </g>
+
+            <!-- Arms (wave animation) -->
+            <g class="arms-group">
+                <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" class="arm-left" transform="rotate(-20 40 95)"/>
+                <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" class="arm-right" transform="rotate(20 100 95)"/>
+            </g>
+
+            <!-- Sparkles (appear on interaction) -->
+            <g class="sparkles" opacity="0">
+                <circle cx="30" cy="40" r="3" fill="#ffd700"/>
+                <circle cx="110" cy="45" r="2" fill="#ffd700"/>
+                <circle cx="25" cy="70" r="2.5" fill="#ffd700"/>
+                <circle cx="115" cy="75" r="2" fill="#ffd700"/>
+                <polygon points="35,55 37,60 32,60" fill="#ffd700"/>
+                <polygon points="105,65 107,70 102,70" fill="#ffd700"/>
+            </g>
+
+            <!-- Hearts (appear when poked) -->
+            <g class="hearts" opacity="0">
+                <text x="25" y="35" font-size="16" fill="#ff69b4">❤</text>
+                <text x="110" y="38" font-size="12" fill="#ff69b4">❤</text>
+                <text x="20" y="85" font-size="14" fill="#ff69b4">❤</text>
+            </g>
+        </svg>
+
+        <!-- Speech Bubble -->
+        <div class="speech-bubble hidden" id="speech-bubble">
+            <div class="speech-text" id="speech-text">Hello! I'm your Smart Fridge Assistant!</div>
+        </div>
+    </div>
+
+    <!-- Chat Panel (opens to left of avatar) -->
+    <div class="chat-panel hidden" id="chat-panel">
+        <div class="chat-header">
+            <div class="header-content">
+                <div class="avatar-indicator">
+                    <svg width="35" height="35" viewBox="0 0 140 140" class="header-avatar">
+                        <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.15)"/>
+                        <circle cx="70" cy="70" r="60" fill="url(#headerGlow)"/>
+                        <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+                        <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+                        <g>
+                            <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="58" cy="55" r="4" fill="#333"/>
+                            <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="82" cy="55" r="4" fill="#333"/>
+                        </g>
+                        <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+                        <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+                        <defs>
+                            <radialGradient id="headerGlow">
+                                <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.8"/>
+                                <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                            </radialGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="header-text">
+                    <h3>Smart Fridge Assistant</h3>
+                    <p class="status-text">Online • Ready to help!</p>
+                </div>
+            </div>
+            <button onclick="toggleChat()" class="close-chat">✕</button>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <div class="message assistant-message">
+                <div class="message-avatar">
+                    <svg width="35" height="35" viewBox="0 0 140 140" class="mini-avatar">
+                        <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)"/>
+                        <circle cx="70" cy="70" r="60" fill="url(#miniGlow)"/>
+                        <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+                        <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+                        <g class="eyes-blink">
+                            <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="58" cy="55" r="4" fill="#333"/>
+                            <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                            <circle cx="82" cy="55" r="4" fill="#333"/>
+                        </g>
+                        <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+                        <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+                        <defs>
+                            <radialGradient id="miniGlow">
+                                <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.6"/>
+                                <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                            </radialGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="message-content">
+                    <p>Hi! I'm your Smart Fridge Assistant. I can help you with:</p>
+                    <ul>
+                        <li>Finding recipes based on your ingredients</li>
+                        <li>Nutrition information</li>
+                        <li>Food storage tips</li>
+                        <li>Cooking instructions</li>
+                    </ul>
+                    <p class="api-note">💡 Add OPENAI_API_KEY to .env to enable AI chat!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <button onclick="toggleVoiceInput()" class="voice-btn" id="voice-btn" title="Voice input">
+                <span class="voice-icon">🎤</span>
+            </button>
+            <input type="text"
+                   id="chat-input"
+                   placeholder="Ask me anything about cooking or recipes..."
+                   onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" class="send-btn">Send</button>
+        </div>
+
+        <!-- Hidden audio player for TTS -->
+        <audio id="tts-audio" style="display: none;"></audio>
+    </div>
+</div>
+
+<style>
+.avatar-chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.avatar-container {
+    position: relative;
+    margin-bottom: 0;
+}
+
+.avatar-background {
+    transition: fill 0.3s;
+}
+
+#avatar-svg {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    animation: float-drift 6s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+/* Main floating animation with horizontal drift */
+@keyframes float-drift {
+    0% {
+        transform: translate(0px, 0px) rotate(0deg);
+    }
+    25% {
+        transform: translate(8px, -12px) rotate(2deg);
+    }
+    50% {
+        transform: translate(-5px, -18px) rotate(-1deg);
+    }
+    75% {
+        transform: translate(-10px, -10px) rotate(1deg);
+    }
+    100% {
+        transform: translate(0px, 0px) rotate(0deg);
+    }
+}
+
+/* Click/Poke animation */
+@keyframes poke-reaction {
+    0% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.15) rotate(-8deg); }
+    50% { transform: scale(0.95) rotate(5deg); }
+    75% { transform: scale(1.08) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+.avatar-poked {
+    animation: poke-reaction 0.6s ease-out !important;
+}
+
+/* Hover effect */
+#avatar-svg:hover {
+    transform: scale(1.1) translateY(-5px) !important;
+}
+
+#avatar-svg:active {
+    transform: scale(0.95) !important;
+}
+
+.avatar-glow {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+.avatar-head {
+    transition: fill 0.3s;
+}
+
+.avatar-body {
+    animation: breathe 2.5s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1, 1); }
+    50% { transform: scale(1.05, 1.08); }
+}
+
+/* Fixed blink animation - uses opacity for smooth natural blink */
+.eyes-blink {
+    animation: blink 4s infinite;
+}
+
+@keyframes blink {
+    0%, 46%, 50%, 100% {
+        opacity: 1;
+    }
+    48% {
+        opacity: 0;
+    }
+}
+
+/* Pupils follow mouse smoothly */
+.avatar-pupil-left, .avatar-pupil-right {
+    transition: transform 0.15s ease-out;
+}
+
+.eyebrow-left, .eyebrow-right {
+    transition: transform 0.3s;
+    transform-origin: center;
+}
+
+/* Eyebrow wiggle when happy */
+@keyframes eyebrow-wiggle {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-2px); }
+    75% { transform: translateY(1px); }
+}
+
+.eyebrows-wiggling .eyebrow-left,
+.eyebrows-wiggling .eyebrow-right {
+    animation: eyebrow-wiggle 0.5s ease-in-out 2;
+}
+
+.arm-left {
+    animation: wave-left 2.5s ease-in-out infinite;
+    transform-origin: 40px 80px;
+}
+
+@keyframes wave-left {
+    0%, 100% { transform: rotate(-20deg); }
+    50% { transform: rotate(-35deg); }
+}
+
+.arm-right {
+    animation: wave-right 2.5s ease-in-out infinite;
+    transform-origin: 100px 80px;
+}
+
+@keyframes wave-right {
+    0%, 100% { transform: rotate(20deg); }
+    50% { transform: rotate(35deg); }
+}
+
+/* Double wave when excited */
+@keyframes wave-left-excited {
+    0%, 100% { transform: rotate(-20deg); }
+    25% { transform: rotate(-45deg); }
+    50% { transform: rotate(-10deg); }
+    75% { transform: rotate(-40deg); }
+}
+
+@keyframes wave-right-excited {
+    0%, 100% { transform: rotate(20deg); }
+    25% { transform: rotate(45deg); }
+    50% { transform: rotate(10deg); }
+    75% { transform: rotate(40deg); }
+}
+
+.arms-excited .arm-left {
+    animation: wave-left-excited 0.6s ease-in-out !important;
+}
+
+.arms-excited .arm-right {
+    animation: wave-right-excited 0.6s ease-in-out !important;
+}
+
+/* Sparkles and hearts */
+.sparkles, .hearts {
+    transition: opacity 0.3s;
+}
+
+@keyframes sparkle-burst {
+    0% { opacity: 1; transform: scale(0.5); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.8); }
+}
+
+.sparkles.show {
+    animation: sparkle-burst 0.8s ease-out;
+}
+
+@keyframes hearts-float {
+    0% { opacity: 0; transform: translateY(0) scale(0.5); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-30px) scale(1.2); }
+}
+
+.hearts.show {
+    animation: hearts-float 1.2s ease-out;
+}
+
+.blush-left, .blush-right {
+    transition: opacity 0.3s;
+}
+
+#avatar-mouth {
+    transition: all 0.4s ease-out;
+}
+
+/* Mouth animations */
+@keyframes mouth-talk {
+    0%, 100% { d: path('M 55 72 Q 70 78 85 72'); }
+    50% { d: path('M 55 74 Q 70 80 85 74'); }
+}
+
+.speech-bubble {
+    position: absolute;
+    bottom: 150px;
+    right: -20px;
+    background: white;
+    color: #333;
+    padding: 15px 18px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    max-width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    animation: fadeIn 0.3s;
+    border: 2px solid #4CAF50;
+}
+
+/* Scrollbar styling for speech bubble */
+.speech-bubble::-webkit-scrollbar {
+    width: 6px;
+}
+
+.speech-bubble::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.speech-bubble::-webkit-scrollbar-thumb {
+    background: #4CAF50;
+    border-radius: 10px;
+}
+
+.speech-bubble::-webkit-scrollbar-thumb:hover {
+    background: #45a049;
+}
+
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    right: 60px;
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid #4CAF50;
+}
+
+.speech-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 62px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid white;
+    z-index: 1;
+}
+
+.speech-text {
+    color: #333;
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.chat-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 180px;
+    width: 400px;
+    height: 550px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    animation: slideInFromRight 0.4s ease-out;
+    border: 2px solid #4CAF50;
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.chat-header {
+    background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 13px 13px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-indicator {
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-glow 2s infinite;
+    overflow: hidden;
+}
+
+.header-avatar {
+    width: 35px;
+    height: 35px;
+    display: block;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+    }
+}
+
+.header-text {
+    flex: 1;
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.status-text {
+    margin: 3px 0 0 0;
+    font-size: 12px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.close-chat {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.close-chat:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+.message {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    animation: fadeIn 0.3s;
+}
+
+.message-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.mini-avatar {
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.user-icon {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.message-content {
+    background: white;
+    padding: 12px 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    max-width: 250px;
+}
+
+.message-content.streaming {
+    background: linear-gradient(90deg, #f8f9fa 25%, #e9ecef 50%, #f8f9fa 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.message-content p {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.message-content li {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.user-message {
+    flex-direction: row-reverse;
+}
+
+.user-message .message-content {
+    background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+    color: white;
+}
+
+.user-message .message-content p,
+.user-message .message-content li {
+    color: white;
+}
+
+.api-note {
+    background: #fff3cd;
+    color: #856404;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.chat-input-container {
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.voice-btn {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.voice-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.voice-btn.listening {
+    background: linear-gradient(135deg, #FF4757 0%, #FF6348 100%);
+    animation: pulse-recording 1s infinite;
+}
+
+@keyframes pulse-recording {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+    }
+}
+
+.voice-icon {
+    font-size: 20px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#chat-input:focus {
+    border-color: #4CAF50;
+}
+
+.send-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.send-btn:active {
+    transform: translateY(0);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+let chatOpen = false;
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    const chatPanel = document.getElementById('chat-panel');
+    const avatar = document.getElementById('avatar-svg');
+    const avatarGlow = document.querySelector('.avatar-glow');
+
+    if (chatOpen) {
+        chatPanel.classList.remove('hidden');
+        // Make avatar more attentive when chatting
+        avatar.style.transform = 'scale(1.05)';
+        if (avatarGlow) {
+            avatarGlow.style.opacity = '1';
+        }
+    } else {
+        chatPanel.classList.add('hidden');
+        // Return avatar to normal
+        avatar.style.transform = 'scale(1)';
+        if (avatarGlow) {
+            avatarGlow.style.opacity = '0.6';
+        }
+    }
+}
+
+// Audio queue for streaming TTS playback
+let audioQueue = [];
+let isPlayingAudio = false;
+let ttsSequenceNumber = 0;
+let ttsPendingQueue = new Map(); // Holds TTS results waiting for their turn
+let ttsNextToAdd = 0; // Next sequence number to add to audio queue
+
+// Chat history for context and persistence
+let chatHistory = [];
+const CHAT_HISTORY_KEY = 'smartfridge_chat_history';
+const MAX_HISTORY_MESSAGES = 20; // Keep last 20 messages for context
+
+// Load chat history from localStorage on page load
+function loadChatHistory() {
+    try {
+        const saved = localStorage.getItem(CHAT_HISTORY_KEY);
+        if (saved) {
+            const history = JSON.parse(saved);
+            chatHistory = history.messages || [];
+
+            // Restore messages to UI
+            const messagesDiv = document.getElementById('chat-messages');
+            // Clear initial message
+            messagesDiv.innerHTML = '';
+
+            history.messages.forEach(msg => {
+                if (msg.role === 'user') {
+                    addMessageToUI(msg.content, 'user', false);
+                } else if (msg.role === 'assistant') {
+                    addMessageToUI(msg.content, 'assistant', false);
+                }
+            });
+
+            console.log(`Loaded ${chatHistory.length} messages from history`);
+        }
+    } catch (error) {
+        console.error('Error loading chat history:', error);
+        chatHistory = [];
+    }
+}
+
+// Save chat history to localStorage
+function saveChatHistory() {
+    try {
+        const data = {
+            messages: chatHistory,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(data));
+    } catch (error) {
+        console.error('Error saving chat history:', error);
+    }
+}
+
+// Add message to history and trim if needed
+function addToHistory(role, content) {
+    // Remove emotion markers from history
+    const cleanContent = content.replace(/\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g, '').trim();
+
+    chatHistory.push({
+        role: role,
+        content: cleanContent
+    });
+
+    // Keep only last MAX_HISTORY_MESSAGES
+    if (chatHistory.length > MAX_HISTORY_MESSAGES) {
+        chatHistory = chatHistory.slice(-MAX_HISTORY_MESSAGES);
+    }
+
+    saveChatHistory();
+}
+
+// Load history when page loads
+window.addEventListener('DOMContentLoaded', () => {
+    loadChatHistory();
+});
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // Add user message to chat and history
+    addMessageToUI(message, 'user', true);
+    addToHistory('user', message);
+    input.value = '';
+
+    // Create message container for streaming response
+    const messagesDiv = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant-message';
+
+    // Create mini avatar for streaming message
+    const avatarHTML = `<svg width="35" height="35" viewBox="0 0 140 140" class="mini-avatar">
+        <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)"/>
+        <circle cx="70" cy="70" r="60" fill="url(#miniGlowStream)"/>
+        <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+        <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+        <g>
+            <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+            <circle cx="58" cy="55" r="4" fill="#333"/>
+            <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+            <circle cx="82" cy="55" r="4" fill="#333"/>
+        </g>
+        <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+        <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+        <defs>
+            <radialGradient id="miniGlowStream">
+                <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.6"/>
+                <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+            </radialGradient>
+        </defs>
+    </svg>`;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content streaming';
+    const textP = document.createElement('p');
+    textP.className = 'streaming-text';
+    contentDiv.appendChild(textP);
+
+    messageDiv.innerHTML = `<div class="message-avatar">${avatarHTML}</div>`;
+    messageDiv.appendChild(contentDiv);
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    let fullText = '';
+    let displayText = '';
+    let sentenceBuffer = '';
+    let processedUpTo = 0;
+
+    // Clear audio queue for new message and reset sequence
+    audioQueue = [];
+    ttsSequenceNumber = 0;
+    ttsPendingQueue.clear();
+    ttsNextToAdd = 0;
+
+    try {
+        // Get current weather and location if available
+        const weather = window.getCurrentWeather ? window.getCurrentWeather() : null;
+        const location = window.getUserLocationData ? window.getUserLocationData() : null;
+
+        // Detect current page for context
+        const currentPage = window.location.pathname.split('/').pop() || 'dashboard';
+
+        // Use fetch with ReadableStream for real-time streaming
+        const response = await fetch('/chat/stream', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: message,
+                history: chatHistory,  // Pass conversation context
+                weather: weather,      // Pass current weather data
+                location: location,    // Pass user location
+                currentPage: currentPage  // Pass current page context
+            })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const {done, value} = await reader.read();
+
+            if (done) {
+                // Process any remaining text
+                let allActions = [];
+                if (sentenceBuffer.trim()) {
+                    const {cleanText, emotions, actions} = parseEmotionsFromText(sentenceBuffer);
+                    displayText += cleanText;
+                    textP.textContent = displayText;
+
+                    if (emotions.length > 0) {
+                        triggerExpression(emotions[emotions.length - 1]);
+                    }
+
+                    if (actions && actions.length > 0) {
+                        allActions = allActions.concat(actions);
+                    }
+
+                    // Generate TTS for remaining sentence
+                    if (cleanText.trim()) {
+                        generateSentenceTTS(cleanText.trim());
+                    }
+                }
+
+                // Execute any actions that were found
+                if (allActions.length > 0) {
+                    executeAssistantActions(allActions);
+                }
+
+                // Save assistant response to history (without emotion markers)
+                addToHistory('assistant', displayText);
+
+                contentDiv.classList.remove('streaming');
+                break;
+            }
+
+            // Decode and parse SSE data
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const content = line.substring(6);
+                    if (content && !line.includes('event: done')) {
+                        fullText += content;
+                        sentenceBuffer += content;
+
+                        // Check for complete sentence (ends with . ! ? or emotion marker)
+                        const sentenceEndMatch = sentenceBuffer.match(/[.!?](?=\s|$|\[)/);
+
+                        if (sentenceEndMatch) {
+                            const endIndex = sentenceEndMatch.index + 1;
+                            const completeSentence = sentenceBuffer.substring(0, endIndex);
+                            sentenceBuffer = sentenceBuffer.substring(endIndex);
+
+                            // Parse emotions and clean text for this sentence
+                            const {cleanText, emotions} = parseEmotionsFromText(completeSentence);
+
+                            // Update display in real-time (without emotion markers)
+                            displayText += cleanText;
+                            textP.textContent = displayText;
+
+                            // Trigger emotion immediately if found
+                            if (emotions.length > 0) {
+                                triggerExpression(emotions[emotions.length - 1]);
+                            }
+
+                            // Generate TTS for this sentence immediately
+                            if (cleanText.trim()) {
+                                generateSentenceTTS(cleanText.trim());
+                            }
+
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        } else {
+                            // No complete sentence yet, but check for emotion markers mid-stream
+                            const {cleanText, emotions} = parseEmotionsFromText(sentenceBuffer);
+
+                            // Update display with partial sentence (removing emotion markers)
+                            const currentDisplay = displayText + cleanText;
+                            textP.textContent = currentDisplay;
+
+                            // Trigger emotion if found
+                            if (emotions.length > 0) {
+                                triggerExpression(emotions[emotions.length - 1]);
+                                // Remove processed emotion markers from buffer
+                                sentenceBuffer = cleanText;
+                            }
+
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        }
+
+                        animateThinking();
+                    }
+                } else if (line.startsWith('event: done')) {
+                    break;
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('Streaming error:', error);
+        textP.textContent = 'Error: Streaming failed. Please try again.';
+        contentDiv.classList.remove('streaming');
+    }
+}
+
+// Generate TTS for a single sentence and add to queue IN ORDER
+async function generateSentenceTTS(sentence) {
+    // Assign sequence number to maintain order
+    const mySequence = ttsSequenceNumber++;
+
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: sentence,
+                generate_audio_only: true
+            })
+        });
+
+        const data = await response.json();
+        if (data.audio_url) {
+            const audioData = {
+                url: data.audio_url,
+                text: sentence
+            };
+
+            // Add to pending queue with sequence number
+            ttsPendingQueue.set(mySequence, audioData);
+
+            // Try to add pending items to audio queue in order
+            addPendingToQueue();
+        }
+    } catch (error) {
+        console.error('TTS generation error:', error);
+    }
+}
+
+// Add pending TTS results to audio queue in correct order
+function addPendingToQueue() {
+    // Keep adding items in sequence order
+    while (ttsPendingQueue.has(ttsNextToAdd)) {
+        const audioData = ttsPendingQueue.get(ttsNextToAdd);
+        ttsPendingQueue.delete(ttsNextToAdd);
+
+        // Add to audio queue in correct order
+        audioQueue.push(audioData);
+
+        // Start playing if not already playing
+        if (!isPlayingAudio) {
+            playNextInQueue();
+        }
+
+        ttsNextToAdd++;
+    }
+}
+
+// Phoneme-specific mouth shapes (South Park style - simple and clear!)
+const MOUTH_SHAPES = {
+    // Bilabial (M, B, P) - Lips closed
+    CLOSED: {
+        smileVisible: true,
+        smilePath: 'M 58 74 L 82 74',
+        openingVisible: false,
+        opening: { rx: 0, ry: 0 },
+        teeth: false,
+        tongue: false
+    },
+
+    // Open vowels (A, AH) - Wide open
+    WIDE: {
+        smileVisible: false,  // Hide smile when mouth opens!
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 16, ry: 12, cy: 78 },
+        teeth: false,
+        tongue: false
+    },
+
+    // Round vowels (O, OO, W) - Round opening
+    ROUND: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 10, ry: 10, cy: 77 },
+        teeth: false,
+        tongue: false
+    },
+
+    // E/I vowels - Wide smile opening
+    E_SHAPE: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 14, ry: 8, cy: 77 },
+        teeth: false,
+        tongue: false
+    },
+
+    // TH sound - Teeth visible, tongue between
+    TH_SOUND: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 11, ry: 7, cy: 77 },
+        teeth: true,
+        tongue: true
+    },
+
+    // F/V sound - Teeth on lower lip
+    F_SOUND: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 10, ry: 6, cy: 77 },
+        teeth: true,
+        tongue: false
+    },
+
+    // S sound - Teeth visible
+    S_SOUND: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 12, ry: 5, cy: 76 },
+        teeth: true,
+        tongue: false
+    },
+
+    // L sound - Tongue visible
+    L_SOUND: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 11, ry: 7, cy: 77 },
+        teeth: false,
+        tongue: true
+    },
+
+    // Small opening (default consonants)
+    SMALL: {
+        smileVisible: false,
+        smilePath: '',
+        openingVisible: true,
+        opening: { rx: 9, ry: 6, cy: 77 },
+        teeth: false,
+        tongue: false
+    },
+
+    // Resting smile
+    SMILE: {
+        smileVisible: true,
+        smilePath: 'M 55 72 Q 70 78 85 72',
+        openingVisible: false,
+        opening: { rx: 0, ry: 0 },
+        teeth: false,
+        tongue: false
+    }
+};
+
+// Map characters to phoneme shapes
+function getPhonemeShape(char) {
+    char = char.toUpperCase();
+
+    // Specific consonants
+    if ('MBP'.includes(char)) return MOUTH_SHAPES.CLOSED;
+    if (char === 'T' && char === 'H') return MOUTH_SHAPES.TH_SOUND; // Will detect TH in text parsing
+    if ('FV'.includes(char)) return MOUTH_SHAPES.F_SOUND;
+    if ('SZ'.includes(char)) return MOUTH_SHAPES.S_SOUND;
+    if ('L'.includes(char)) return MOUTH_SHAPES.L_SOUND;
+
+    // Vowels
+    if ('A'.includes(char)) return MOUTH_SHAPES.WIDE;
+    if ('OUW'.includes(char)) return MOUTH_SHAPES.ROUND;
+    if ('EIY'.includes(char)) return MOUTH_SHAPES.E_SHAPE;
+
+    // Default
+    return MOUTH_SHAPES.SMALL;
+}
+
+// Apply mouth shape - smile OR opening, never both!
+function setMouthShape(shape) {
+    const mouth = document.getElementById('avatar-mouth');
+    const opening = document.getElementById('mouth-opening');
+    const teeth = document.getElementById('mouth-teeth');
+    const tongue = document.getElementById('mouth-tongue');
+
+    // Show EITHER smile OR opening, never both
+    if (mouth) {
+        if (shape.smileVisible) {
+            mouth.setAttribute('d', shape.smilePath);
+            mouth.style.opacity = '1';
+        } else {
+            mouth.style.opacity = '0';
+        }
+    }
+
+    if (opening) {
+        if (shape.openingVisible) {
+            opening.style.opacity = '1';
+            opening.setAttribute('rx', shape.opening.rx);
+            opening.setAttribute('ry', shape.opening.ry);
+            opening.setAttribute('cy', shape.opening.cy || 77);
+        } else {
+            opening.style.opacity = '0';
+            opening.setAttribute('rx', 0);
+            opening.setAttribute('ry', 0);
+        }
+    }
+
+    // Teeth and tongue - simple on/off
+    if (teeth) {
+        teeth.style.opacity = shape.teeth ? '1' : '0';
+    }
+
+    if (tongue) {
+        tongue.style.opacity = shape.tongue ? '0.85' : '0';
+    }
+}
+
+// Current sentence being spoken (for lip sync)
+let currentSentenceText = '';
+
+// Audio context for real-time audio analysis
+let audioContext;
+let analyser;
+let animationFrameId;
+
+// Play next audio in queue with AUDIO-REACTIVE lip sync
+function playNextInQueue() {
+    if (audioQueue.length === 0) {
+        isPlayingAudio = false;
+        currentSentenceText = '';
+        return;
+    }
+
+    isPlayingAudio = true;
+    const audioData = audioQueue.shift();
+    const audioUrl = audioData.url;
+    const text = audioData.text;
+    currentSentenceText = text;
+
+    const audio = document.getElementById('tts-audio');
+    audio.src = audioUrl;
+
+    // Initialize audio context if needed
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+
+        const source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+    }
+
+    audio.play().catch(err => {
+        console.error('Error playing audio:', err);
+        playNextInQueue();
+    });
+
+    const handlePlay = () => {
+        // Start audio-reactive lip sync
+        animateMouthFromAudio();
+    };
+
+    const handleEnded = () => {
+        // Cancel animation
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Return to resting smile
+        setMouthShape(MOUTH_SHAPES.SMILE);
+
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('ended', handleEnded);
+
+        currentSentenceText = '';
+        playNextInQueue();
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('ended', handleEnded);
+}
+
+// Animate mouth: audio volume + text phonemes = perfect sync!
+function animateMouthFromAudio() {
+    if (!analyser) return;
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const text = currentSentenceText || '';
+    const chars = text.replace(/\s+/g, '').toUpperCase().split('');
+
+    let charIndex = 0;
+    let framesSinceLastChange = 0;
+    const framesPerChar = 8; // Slow down character advancement
+
+    function updateMouth() {
+        analyser.getByteFrequencyData(dataArray);
+
+        // Calculate average volume
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        // Advance to next character based on time + volume
+        framesSinceLastChange++;
+        if (average > 15 && framesSinceLastChange > framesPerChar && charIndex < chars.length) {
+            charIndex++;
+            framesSinceLastChange = 0;
+        }
+
+        // Determine mouth shape based on current character + volume
+        let shape;
+
+        if (average < 10) {
+            // Silent - close mouth
+            shape = MOUTH_SHAPES.CLOSED;
+        } else if (charIndex < chars.length) {
+            // Use phoneme from text
+            const currentChar = chars[charIndex];
+            const nextChar = chars[charIndex + 1];
+
+            // Check for TH combination
+            if (currentChar === 'T' && nextChar === 'H') {
+                shape = MOUTH_SHAPES.TH_SOUND;
+            } else {
+                shape = getPhonemeShape(currentChar);
+            }
+
+            // Adjust opening size based on volume
+            if (shape.openingVisible && average > 20) {
+                shape = JSON.parse(JSON.stringify(shape)); // Deep clone
+                const volumeMultiplier = Math.min(average / 40, 1.8);
+                shape.opening.rx *= volumeMultiplier;
+                shape.opening.ry *= volumeMultiplier;
+            }
+        } else {
+            // Past end of text, use volume-based fallback
+            if (average < 25) {
+                shape = MOUTH_SHAPES.SMALL;
+            } else if (average < 55) {
+                shape = MOUTH_SHAPES.ROUND;
+            } else {
+                shape = MOUTH_SHAPES.WIDE;
+            }
+        }
+
+        setMouthShape(shape);
+
+        // Continue animation
+        animationFrameId = requestAnimationFrame(updateMouth);
+    }
+
+    updateMouth();
+}
+
+// Parse emotions and actions from text in real-time
+function parseEmotionsFromText(text) {
+    const emotionPattern = /\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g;
+    const actionPattern = /\[\[([A-Z_]+):([^\]]+)\]\]/g;
+    const emotions = [];
+    const actions = [];
+    let match;
+
+    // Extract all emotion markers
+    while ((match = emotionPattern.exec(text)) !== null) {
+        emotions.push(match[1]);
+    }
+
+    // Extract all action commands
+    const actionPatternCopy = /\[\[([A-Z_]+):([^\]]+)\]\]/g;
+    while ((match = actionPatternCopy.exec(text)) !== null) {
+        actions.push({
+            type: match[1],
+            params: match[2]
+        });
+    }
+
+    // Remove markers from text (hide from user)
+    let cleanText = text.replace(emotionPattern, '').trim();
+    cleanText = cleanText.replace(actionPattern, '').trim();
+
+    return { cleanText, emotions, actions };
+}
+
+// Execute assistant actions
+async function executeAssistantActions(actions) {
+    for (const action of actions) {
+        try {
+            await executeAction(action.type, action.params);
+        } catch (error) {
+            console.error(`Action execution error (${action.type}):`, error);
+        }
+    }
+}
+
+// Execute a single action
+async function executeAction(type, params) {
+    console.log(`Executing action: ${type} with params: ${params}`);
+
+    switch (type) {
+        case 'NAVIGATE':
+            // Navigate to a page
+            navigateToPage(params);
+            break;
+
+        case 'HIGHLIGHT':
+            // Highlight a UI element
+            highlightElement(params);
+            break;
+
+        case 'ADD_ITEM':
+            // Add inventory item
+            const [itemName, quantity, unit] = params.split(',').map(s => s.trim());
+            await addInventoryItem(itemName, quantity || '1', unit || 'pcs');
+            break;
+
+        case 'REMOVE_ITEM':
+            // Remove inventory item
+            await removeInventoryItem(params.trim());
+            break;
+
+        case 'ACTION':
+            // Trigger a feature/action
+            await triggerFeature(params.trim());
+            break;
+
+        default:
+            console.warn(`Unknown action type: ${type}`);
+    }
+}
+
+// Navigate to a page
+function navigateToPage(pageName) {
+    const pageMap = {
+        'dashboard': '/dashboard',
+        'inventory': '/',
+        'users': '/users',
+        'health-dashboard': '/health-dashboard',
+        'health': '/health-dashboard',
+        'recipes': '/advanced-recipe-search',
+        'waste-prevention': '/waste-prevention',
+        'waste': '/waste-prevention',
+        'preferences': '/preferences',
+        'settings': '/preferences',
+        'family': '/family/create'
+    };
+
+    const url = pageMap[pageName.toLowerCase()] || '/dashboard';
+
+    console.log(`Navigating to: ${url}`);
+
+    // Add a small delay so user sees the message first
+    setTimeout(() => {
+        window.location.href = url;
+    }, 1500);
+}
+
+// Highlight a UI element with pulsing animation
+function highlightElement(elementId) {
+    // Try multiple selectors
+    let element = document.getElementById(elementId);
+
+    if (!element) {
+        // Try querySelector for more complex selectors
+        element = document.querySelector(`[onclick*="${elementId}"]`) ||
+                  document.querySelector(`.${elementId}`) ||
+                  document.querySelector(`button:contains("${elementId}")`);
+    }
+
+    if (!element) {
+        console.warn(`Element not found: ${elementId}`);
+        return;
+    }
+
+    // Add highlight class
+    element.classList.add('assistant-highlight');
+
+    // Create pulsing glow effect
+    const style = document.createElement('style');
+    style.textContent = `
+        .assistant-highlight {
+            animation: assistant-pulse 2s ease-in-out 3;
+            position: relative;
+            z-index: 9999;
+        }
+
+        @keyframes assistant-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+                transform: scale(1.05);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Scroll element into view
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Remove highlight after animation
+    setTimeout(() => {
+        element.classList.remove('assistant-highlight');
+    }, 6000);
+}
+
+// Add item to inventory
+async function addInventoryItem(itemName, quantity, unit) {
+    try {
+        const response = await fetch('/api/inventory/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                name: itemName,
+                quantity: parseFloat(quantity) || 1,
+                unit: unit || 'pcs'
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log(`Added ${itemName} to inventory`);
+            // Refresh stats if on dashboard
+            if (typeof updateStats === 'function') {
+                updateStats();
+            }
+        } else {
+            console.error(`Failed to add ${itemName}:`, result.error);
+        }
+    } catch (error) {
+        console.error('Add inventory error:', error);
+    }
+}
+
+// Remove item from inventory
+async function removeInventoryItem(itemName) {
+    try {
+        const response = await fetch('/api/inventory/remove', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: itemName })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log(`Removed ${itemName} from inventory`);
+            // Refresh stats if on dashboard
+            if (typeof updateStats === 'function') {
+                updateStats();
+            }
+        } else {
+            console.error(`Failed to remove ${itemName}:`, result.error);
+        }
+    } catch (error) {
+        console.error('Remove inventory error:', error);
+    }
+}
+
+// Trigger a feature/action
+async function triggerFeature(featureName) {
+    console.log(`Triggering feature: ${featureName}`);
+
+    switch (featureName.toLowerCase()) {
+        case 'capture':
+            if (typeof captureAndDetect === 'function') {
+                captureAndDetect();
+            }
+            break;
+
+        case 'detect':
+            if (typeof captureAndDetect === 'function') {
+                captureAndDetect();
+            }
+            break;
+
+        case 'door-cycle':
+        case 'door':
+            if (typeof simulateDoorCycle === 'function') {
+                simulateDoorCycle();
+            }
+            break;
+
+        default:
+            console.warn(`Unknown feature: ${featureName}`);
+    }
+}
+
+// Trigger a SINGLE emotion expression instantly (for real-time streaming)
+function triggerExpression(emotion) {
+    const mouth = document.getElementById('avatar-mouth');
+    const eyebrowLeft = document.querySelector('.eyebrow-left');
+    const eyebrowRight = document.querySelector('.eyebrow-right');
+    const blushLeft = document.querySelector('.blush-left');
+    const blushRight = document.querySelector('.blush-right');
+    const eyes = document.querySelectorAll('.eyes-blink');
+
+    if (!mouth || !eyebrowLeft || !eyebrowRight) return;
+
+    switch (emotion) {
+        case 'HAPPY':
+            mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+            blushLeft.style.opacity = '0.6';
+            blushRight.style.opacity = '0.6';
+            break;
+        case 'EXCITED':
+            mouth.setAttribute('d', 'M 52 68 Q 70 90 88 68'); // Huge open smile
+            eyebrowLeft.setAttribute('d', 'M 50 43 Q 58 40 66 43'); // Raised
+            eyebrowRight.setAttribute('d', 'M 74 43 Q 82 40 90 43');
+            blushLeft.style.opacity = '0.8';
+            blushRight.style.opacity = '0.8';
+            break;
+        case 'THINKING':
+            mouth.setAttribute('d', 'M 58 74 L 82 74'); // Straight line
+            eyebrowLeft.setAttribute('d', 'M 50 45 Q 58 43 66 47'); // One raised
+            eyebrowRight.setAttribute('d', 'M 74 49 Q 82 47 90 47');
+            break;
+        case 'SURPRISED':
+            mouth.setAttribute('d', 'M 65 75 Q 70 82 75 75'); // Small O
+            eyebrowLeft.setAttribute('d', 'M 50 42 Q 58 38 66 42'); // Both raised high
+            eyebrowRight.setAttribute('d', 'M 74 42 Q 82 38 90 42');
+            eyes.forEach(eye => eye.style.transform = 'scale(1.2)'); // Wide eyes
+            setTimeout(() => eyes.forEach(eye => eye.style.transform = ''), 1500);
+            break;
+        case 'CONCERNED':
+            mouth.setAttribute('d', 'M 55 76 Q 70 72 85 76'); // Slight frown
+            eyebrowLeft.setAttribute('d', 'M 50 49 Q 58 46 66 45'); // Worried
+            eyebrowRight.setAttribute('d', 'M 74 45 Q 82 46 90 49');
+            break;
+    }
+
+    // Reset after 2.5 seconds
+    setTimeout(() => {
+        mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+        eyebrowLeft.setAttribute('d', 'M 50 47 Q 58 45 66 47');
+        eyebrowRight.setAttribute('d', 'M 74 47 Q 82 45 90 47');
+        blushLeft.style.opacity = '0';
+        blushRight.style.opacity = '0';
+    }, 2500);
+}
+
+// Generate TTS after streaming completes
+async function generateTTS(text) {
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: text,
+                generate_audio_only: true
+            })
+        });
+
+        const data = await response.json();
+        if (data.audio_url) {
+            playAvatarSpeech(data.audio_url);
+        }
+    } catch (error) {
+        console.error('TTS generation error:', error);
+    }
+}
+
+// Animate thinking/typing
+function animateThinking() {
+    const mouth = document.getElementById('avatar-mouth');
+    if (mouth && !mouth.dataset.animating) {
+        mouth.dataset.animating = 'true';
+        setTimeout(() => {
+            mouth.removeAttribute('data-animating');
+        }, 100);
+    }
+}
+
+// Add message to UI only (separated from history tracking)
+function addMessageToUI(text, type, scrollToBottom = true) {
+    const messagesDiv = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}-message`;
+
+    // Use mini avatar SVG for assistant, simple icon for user
+    const avatarHTML = type === 'user'
+        ? `<div class="user-icon">👤</div>`
+        : `<svg width="35" height="35" viewBox="0 0 140 140" class="mini-avatar">
+            <circle cx="70" cy="70" r="65" fill="rgba(255, 255, 255, 0.95)"/>
+            <circle cx="70" cy="70" r="60" fill="url(#miniGlow${Date.now()})"/>
+            <ellipse cx="70" cy="95" rx="25" ry="30" fill="#4CAF50"/>
+            <circle cx="70" cy="60" r="35" fill="#2196F3"/>
+            <g>
+                <ellipse cx="58" cy="55" rx="6" ry="6" fill="white"/>
+                <circle cx="58" cy="55" r="4" fill="#333"/>
+                <ellipse cx="82" cy="55" rx="6" ry="6" fill="white"/>
+                <circle cx="82" cy="55" r="4" fill="#333"/>
+            </g>
+            <path d="M 50 47 Q 58 45 66 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 74 47 Q 82 45 90 47" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 55 72 Q 70 78 85 72" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <ellipse cx="40" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(-20 40 95)"/>
+            <ellipse cx="100" cy="95" rx="8" ry="20" fill="#4CAF50" transform="rotate(20 100 95)"/>
+            <defs>
+                <radialGradient id="miniGlow${Date.now()}">
+                    <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.6"/>
+                    <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0"/>
+                </radialGradient>
+            </defs>
+        </svg>`;
+
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${avatarHTML}</div>
+        <div class="message-content">
+            <p>${text}</p>
+        </div>
+    `;
+
+    messagesDiv.appendChild(messageDiv);
+
+    if (scrollToBottom) {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+}
+
+function showAvatarSpeech(text, duration = 8000) {
+    // Don't show speech bubble if chat is already open (redundant)
+    if (chatOpen) return;
+
+    const speechBubble = document.getElementById('speech-bubble');
+    const speechText = document.getElementById('speech-text');
+
+    speechText.textContent = text;
+    speechBubble.classList.remove('hidden');
+
+    // Clear any existing timeout
+    if (window.speechTimeout) {
+        clearTimeout(window.speechTimeout);
+    }
+
+    // Set new timeout
+    window.speechTimeout = setTimeout(() => {
+        speechBubble.classList.add('hidden');
+    }, duration);
+}
+
+// Parse emotion markers from response text
+function parseEmotions(text) {
+    const emotionPattern = /\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED)\]/g;
+    const emotions = [];
+    let match;
+
+    // Extract all emotion markers
+    while ((match = emotionPattern.exec(text)) !== null) {
+        emotions.push(match[1]);
+    }
+
+    // Remove markers from text (hide from user)
+    const cleanText = text.replace(emotionPattern, '').trim();
+
+    return { cleanText, emotions };
+}
+
+// Trigger facial expressions based on emotion markers
+function triggerExpressions(emotions) {
+    const mouth = document.getElementById('avatar-mouth');
+    const eyebrowLeft = document.querySelector('.eyebrow-left');
+    const eyebrowRight = document.querySelector('.eyebrow-right');
+    const blushLeft = document.querySelector('.blush-left');
+    const blushRight = document.querySelector('.blush-right');
+    const eyes = document.querySelectorAll('.eyes-blink');
+
+    emotions.forEach((emotion, index) => {
+        setTimeout(() => {
+            switch (emotion) {
+                case 'HAPPY':
+                    mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+                    blushLeft.style.opacity = '0.6';
+                    blushRight.style.opacity = '0.6';
+                    break;
+                case 'EXCITED':
+                    mouth.setAttribute('d', 'M 52 68 Q 70 90 88 68'); // Huge open smile
+                    eyebrowLeft.setAttribute('d', 'M 50 43 Q 58 40 66 43'); // Raised
+                    eyebrowRight.setAttribute('d', 'M 74 43 Q 82 40 90 43');
+                    blushLeft.style.opacity = '0.8';
+                    blushRight.style.opacity = '0.8';
+                    break;
+                case 'THINKING':
+                    mouth.setAttribute('d', 'M 58 74 L 82 74'); // Straight line (hmm)
+                    eyebrowLeft.setAttribute('d', 'M 50 45 Q 58 43 66 47'); // One raised
+                    eyebrowRight.setAttribute('d', 'M 74 49 Q 82 47 90 47');
+                    break;
+                case 'SURPRISED':
+                    mouth.setAttribute('d', 'M 65 75 Q 70 82 75 75'); // Small O
+                    eyebrowLeft.setAttribute('d', 'M 50 42 Q 58 38 66 42'); // Both raised high
+                    eyebrowRight.setAttribute('d', 'M 74 42 Q 82 38 90 42');
+                    eyes.forEach(eye => eye.style.transform = 'scale(1.2)'); // Wide eyes
+                    setTimeout(() => eyes.forEach(eye => eye.style.transform = ''), 1500);
+                    break;
+                case 'CONCERNED':
+                    mouth.setAttribute('d', 'M 55 76 Q 70 72 85 76'); // Slight frown
+                    eyebrowLeft.setAttribute('d', 'M 50 49 Q 58 46 66 45'); // Worried
+                    eyebrowRight.setAttribute('d', 'M 74 45 Q 82 46 90 49');
+                    break;
+            }
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+                eyebrowLeft.setAttribute('d', 'M 50 47 Q 58 45 66 47'); // Normal
+                eyebrowRight.setAttribute('d', 'M 74 47 Q 82 45 90 47');
+                blushLeft.style.opacity = '0';
+                blushRight.style.opacity = '0';
+            }, 2000);
+        }, index * 500); // Stagger expressions if multiple
+    });
+}
+
+// Play TTS audio and animate avatar with MUCH MORE VISIBLE mouth movement
+function playAvatarSpeech(audioUrl) {
+    const audio = document.getElementById('tts-audio');
+    const mouth = document.getElementById('avatar-mouth');
+    const avatar = document.getElementById('avatar-svg');
+
+    audio.src = audioUrl;
+
+    // Start playing
+    audio.play().catch(err => {
+        console.error('Error playing audio:', err);
+    });
+
+    // Animate mouth while speaking - MUCH MORE VISIBLE
+    let talkInterval;
+    let isOpen = false;
+    audio.addEventListener('play', () => {
+        // Make avatar more animated while talking
+        if (avatar) {
+            avatar.style.animation = 'none';
+            setTimeout(() => avatar.style.animation = '', 10);
+        }
+
+        // Animate mouth open/close with BIGGER movements
+        talkInterval = setInterval(() => {
+            if (mouth) {
+                if (isOpen) {
+                    mouth.setAttribute('d', 'M 55 74 Q 70 76 85 74'); // Closed (neutral)
+                } else {
+                    mouth.setAttribute('d', 'M 52 70 Q 70 88 88 70'); // WIDE OPEN
+                }
+                isOpen = !isOpen;
+            }
+        }, 120); // Faster animation for more lively speech
+    });
+
+    audio.addEventListener('ended', () => {
+        clearInterval(talkInterval);
+        if (mouth) {
+            mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+        }
+    });
+}
+
+// Voice input functionality
+let recognition;
+let isListening = false;
+
+function toggleVoiceInput() {
+    const voiceBtn = document.getElementById('voice-btn');
+    const chatInput = document.getElementById('chat-input');
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('Voice input is not supported in your browser. Please use Chrome, Edge, or Safari.');
+        return;
+    }
+
+    if (!recognition) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            isListening = true;
+            voiceBtn.classList.add('listening');
+            chatInput.placeholder = 'Listening...';
+            showAvatarSpeech('I\'m listening! 👂', 3000);
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            chatInput.value = transcript;
+            showAvatarSpeech('Got it! Let me think...', 2000);
+
+            // Auto-send the message
+            setTimeout(() => {
+                sendMessage();
+            }, 500);
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            chatInput.placeholder = 'Ask me anything about cooking or recipes...';
+
+            if (event.error === 'no-speech') {
+                showAvatarSpeech('I didn\'t hear anything. Try again!', 3000);
+            } else {
+                showAvatarSpeech('Oops! Voice error. Try typing instead.', 3000);
+            }
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            chatInput.placeholder = 'Ask me anything about cooking or recipes...';
+        };
+    }
+
+    if (isListening) {
+        recognition.stop();
+    } else {
+        try {
+            recognition.start();
+        } catch (err) {
+            console.error('Error starting recognition:', err);
+        }
+    }
+}
+
+// Avatar interaction - MUCH more interactive!
+let lastPokeTime = 0;
+let pokeCount = 0;
+let totalPokes = 0;
+
+function pokeAvatar() {
+    const now = Date.now();
+    const timeSinceLastPoke = now - lastPokeTime;
+
+    // Reset poke count if it's been a while
+    if (timeSinceLastPoke > 5000) {
+        pokeCount = 0;
+    }
+
+    pokeCount++;
+    totalPokes++;
+    lastPokeTime = now;
+
+    // Get all the interactive elements
+    const avatar = document.getElementById('avatar-svg');
+    const sparkles = document.querySelector('.sparkles');
+    const hearts = document.querySelector('.hearts');
+    const blushLeft = document.querySelector('.blush-left');
+    const blushRight = document.querySelector('.blush-right');
+    const mouth = document.getElementById('avatar-mouth');
+    const face = document.querySelector('.avatar-face');
+    const arms = document.querySelector('.arms-group');
+
+    // Trigger poke animation
+    avatar.classList.remove('avatar-poked');
+    void avatar.offsetWidth; // Force reflow
+    avatar.classList.add('avatar-poked');
+    setTimeout(() => avatar.classList.remove('avatar-poked'), 600);
+
+    // Open chat on first click!
+    if (!chatOpen) {
+        showAvatarSpeech('Let\'s chat! Ask me anything! 😊', 5000);
+        hearts.classList.add('show');
+        hearts.style.opacity = '1';
+        blushLeft.style.opacity = '0.8';
+        blushRight.style.opacity = '0.8';
+        mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+
+        // Open the chat immediately!
+        setTimeout(() => {
+            toggleChat();
+            // Focus the input so user can start typing immediately
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                setTimeout(() => chatInput.focus(), 100);
+            }
+        }, 600);
+
+        setTimeout(() => {
+            hearts.classList.remove('show');
+            hearts.style.opacity = '0';
+        }, 1200);
+    } else {
+        // Chat already open - show some personality
+        const encouragingMessages = [
+            "I'm here to help! What do you need? 😊",
+            "Ask me about recipes! 🍳",
+            "Need cooking tips? I'm ready! 👨‍🍳",
+            "What can I help you with today? 💬"
+        ];
+        const randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+
+        sparkles.style.opacity = '1';
+        setTimeout(() => sparkles.style.opacity = '0', 800);
+
+        mouth.setAttribute('d', 'M 55 70 Q 70 85 85 70'); // Big smile
+    }
+
+    // Reset face after emotions
+    setTimeout(() => {
+        blushLeft.style.opacity = '0';
+        blushRight.style.opacity = '0';
+        mouth.setAttribute('d', 'M 55 72 Q 70 78 85 72'); // Normal smile
+    }, 3000);
+}
+
+// Eye tracking (pupils follow mouse) - improved
+document.addEventListener('mousemove', (e) => {
+    const avatar = document.getElementById('avatar-svg');
+    if (!avatar) return;
+
+    const rect = avatar.getBoundingClientRect();
+    const avatarCenterX = rect.left + rect.width / 2;
+    const avatarCenterY = rect.top + rect.height / 2.5; // Adjusted for eye position
+
+    const angle = Math.atan2(e.clientY - avatarCenterY, e.clientX - avatarCenterX);
+    const distance = Math.min(
+        Math.hypot(e.clientX - avatarCenterX, e.clientY - avatarCenterY) / 150,
+        2.5 // Max movement distance
+    );
+
+    const pupilLeft = document.querySelector('.avatar-pupil-left');
+    const pupilRight = document.querySelector('.avatar-pupil-right');
+
+    if (pupilLeft && pupilRight) {
+        const moveX = Math.cos(angle) * distance;
+        const moveY = Math.sin(angle) * distance;
+
+        pupilLeft.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        pupilRight.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    }
+});
+
+// Random idle animations - encourage interaction
+let idleMessages = [
+    "Click me to chat about recipes! 🍳",
+    "Need help? Click me! 😊",
+    "I can help you cook! Click to chat! 👨‍🍳",
+    "Click me for cooking tips! ✨",
+    "Let's chat! Click me! 💬",
+    "I'm here to help! Click me! 🥘",
+    "Want recipe ideas? Click me! 🍽️",
+    "Click me and let's talk food! 😋"
+];
+
+function showRandomIdleMessage() {
+    if (!chatOpen) {
+        const randomPhrase = idleMessages[Math.floor(Math.random() * idleMessages.length)];
+        showAvatarSpeech(randomPhrase, 10000);
+
+        // Occasionally show sparkles
+        if (Math.random() > 0.7) {
+            const sparkles = document.querySelector('.sparkles');
+            sparkles.style.opacity = '1';
+            setTimeout(() => sparkles.style.opacity = '0', 600);
+        }
+    }
+}
+
+// Show idle messages every 30 seconds
+setInterval(showRandomIdleMessage, 30000);
+
+// Show initial greeting - make it clear to click!
+setTimeout(() => {
+    showAvatarSpeech('Hi! I\'m your Smart Fridge Assistant! Click me to start chatting! 👋', 12000);
+}, 2000);
+</script>

@@ -3,7 +3,7 @@
 import requests
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+# OpenAI import moved to conditional block below
 import json
 
 # Load environment variables from project root
@@ -87,10 +87,21 @@ def find_recipes_by_ingredients(ingredients, dietary_preference=None):
 def get_recipe_details(recipe_id):
     return api.get_recipe_details(recipe_id)
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Initialize OpenAI client (only if API key exists)
+client = None
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+if OPENAI_API_KEY and OPENAI_API_KEY.strip():
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+    except Exception as e:
+        print(f"Warning: Could not initialize OpenAI client: {e}")
+        client = None
 
 def get_ai_recipe_suggestion(ingredients, dietary_preference=None):
+    if not client:
+        print("Warning: OpenAI client not available - AI recipe suggestions disabled")
+        return None
     prompt = f"Create a recipe using some or all of these ingredients: {', '.join(ingredients)}. "
     if dietary_preference:
         prompt += f"The recipe should be suitable for a {dietary_preference} diet. "

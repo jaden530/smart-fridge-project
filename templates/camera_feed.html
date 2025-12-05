@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Live Camera Feed - Smart Fridge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .camera-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .camera-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+        gap: 30px;
+        margin-top: 20px;
+    }
+
+    .camera-card {
+        background: #fff;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .camera-card h3 {
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .camera-frame {
+        width: 100%;
+        border-radius: 10px;
+        background: #000;
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .camera-frame img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+    }
+
+    .camera-controls {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .control-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-start {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-start:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-stop {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-stop:hover {
+        background: #c82333;
+    }
+
+    .btn-capture {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-capture:hover {
+        background: #218838;
+    }
+
+    .btn-detect {
+        background: #ffc107;
+        color: #333;
+    }
+
+    .btn-detect:hover {
+        background: #e0a800;
+    }
+
+    .detection-info {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .detection-info h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .detected-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .item-tag {
+        background: #667eea;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+
+    .camera-status {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+
+    .status-active {
+        background: #28a745;
+        color: white;
+    }
+
+    .status-inactive {
+        background: #6c757d;
+        color: white;
+    }
+
+    .error-message {
+        color: #dc3545;
+        padding: 15px;
+        background: #f8d7da;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="camera-container">
+    <h1>📹 Live Camera Feed</h1>
+    <p>Monitor your fridge in real-time with AI object detection</p>
+
+    <div class="camera-grid">
+        <!-- Camera 0 (Face/Door Camera) -->
+        <div class="camera-card">
+            <h3>
+                👤 Camera 0 - Face Recognition
+                <span class="camera-status status-inactive" id="status-0">Offline</span>
+            </h3>
+            <div class="camera-frame" id="frame-0">
+                <img id="stream-0" src="" alt="Camera 0 Stream" style="display: none;">
+                <p style="color: #999;">Camera feed not started</p>
+            </div>
+            <div class="camera-controls">
+                <button class="control-btn btn-start" onclick="startStream(0)">
+                    <span>▶️</span> Start Feed
+                </button>
+                <button class="control-btn btn-stop" onclick="stopStream(0)">
+                    <span>⏹️</span> Stop
+                </button>
+                <button class="control-btn btn-capture" onclick="captureFrame(0)">
+                    <span>📸</span> Capture
+                </button>
+                <button class="control-btn btn-detect" onclick="detectObjects(0)">
+                    <span>🔍</span> Detect Objects
+                </button>
+            </div>
+            <div class="detection-info" id="detection-0" style="display: none;">
+                <h4>Detected Objects:</h4>
+                <div class="detected-items" id="items-0"></div>
+            </div>
+        </div>
+
+        <!-- Camera 1 (Food Detection Camera) -->
+        <div class="camera-card">
+            <h3>
+                🍎 Camera 1 - Food Detection
+                <span class="camera-status status-inactive" id="status-1">Offline</span>
+            </h3>
+            <div class="camera-frame" id="frame-1">
+                <img id="stream-1" src="" alt="Camera 1 Stream" style="display: none;">
+                <p style="color: #999;">Camera feed not started</p>
+            </div>
+            <div class="camera-controls">
+                <button class="control-btn btn-start" onclick="startStream(1)">
+                    <span>▶️</span> Start Feed
+                </button>
+                <button class="control-btn btn-stop" onclick="stopStream(1)">
+                    <span>⏹️</span> Stop
+                </button>
+                <button class="control-btn btn-capture" onclick="captureFrame(1)">
+                    <span>📸</span> Capture
+                </button>
+                <button class="control-btn btn-detect" onclick="detectObjects(1)">
+                    <span>🔍</span> Detect Objects
+                </button>
+            </div>
+            <div class="detection-info" id="detection-1" style="display: none;">
+                <h4>Detected Objects:</h4>
+                <div class="detected-items" id="items-1"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let activeStreams = new Set();
+
+function startStream(cameraId) {
+    const streamImg = document.getElementById(`stream-${cameraId}`);
+    const status = document.getElementById(`status-${cameraId}`);
+    const frame = document.getElementById(`frame-${cameraId}`);
+
+    // Set stream source with cache buster
+    streamImg.src = `/video_feed/${cameraId}?t=${Date.now()}`;
+    streamImg.style.display = 'block';
+    frame.querySelector('p')?.remove();
+
+    // Update status
+    status.textContent = 'Live';
+    status.className = 'camera-status status-active';
+
+    activeStreams.add(cameraId);
+
+    console.log(`Started camera ${cameraId} stream`);
+}
+
+function stopStream(cameraId) {
+    const streamImg = document.getElementById(`stream-${cameraId}`);
+    const status = document.getElementById(`status-${cameraId}`);
+    const frame = document.getElementById(`frame-${cameraId}`);
+
+    // Stop stream
+    streamImg.src = '';
+    streamImg.style.display = 'none';
+
+    // Add placeholder text
+    if (!frame.querySelector('p')) {
+        const placeholder = document.createElement('p');
+        placeholder.style.color = '#999';
+        placeholder.textContent = 'Camera feed stopped';
+        frame.appendChild(placeholder);
+    }
+
+    // Update status
+    status.textContent = 'Offline';
+    status.className = 'camera-status status-inactive';
+
+    activeStreams.delete(cameraId);
+
+    console.log(`Stopped camera ${cameraId} stream`);
+}
+
+async function captureFrame(cameraId) {
+    try {
+        const response = await fetch('/capture_frame', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({camera_id: cameraId})
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(`✅ Frame captured from Camera ${cameraId}`);
+        } else {
+            alert(`❌ Failed to capture: ${data.error}`);
+        }
+    } catch (error) {
+        alert(`❌ Error: ${error.message}`);
+    }
+}
+
+async function detectObjects(cameraId) {
+    try {
+        const detectionDiv = document.getElementById(`detection-${cameraId}`);
+        const itemsDiv = document.getElementById(`items-${cameraId}`);
+
+        // Show loading
+        detectionDiv.style.display = 'block';
+        itemsDiv.innerHTML = '<p>🔄 Detecting objects...</p>';
+
+        const response = await fetch('/detect_from_camera', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({camera_id: cameraId})
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.objects && data.objects.length > 0) {
+            // Display detected items
+            itemsDiv.innerHTML = '';
+            data.objects.forEach(obj => {
+                const tag = document.createElement('span');
+                tag.className = 'item-tag';
+                tag.textContent = `${obj.class} (${(obj.confidence * 100).toFixed(0)}%)`;
+                itemsDiv.appendChild(tag);
+            });
+        } else {
+            itemsDiv.innerHTML = '<p style="color: #999;">No objects detected</p>';
+        }
+    } catch (error) {
+        const itemsDiv = document.getElementById(`items-${cameraId}`);
+        itemsDiv.innerHTML = `<p style="color: #dc3545;">Error: ${error.message}</p>`;
+    }
+}
+
+// Cleanup streams on page unload
+window.addEventListener('beforeunload', () => {
+    activeStreams.forEach(cameraId => stopStream(cameraId));
+});
+</script>
+{% endblock %}

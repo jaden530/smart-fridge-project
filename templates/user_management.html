@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Smart Fridge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .user-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .user-header h2 {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .user-card {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .user-card h3 {
+        color: #333;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .user-info {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .user-info label {
+        font-weight: 600;
+        color: #555;
+    }
+    .user-info value {
+        color: #333;
+    }
+    .action-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin: 5px;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    .btn-success:hover {
+        background: #218838;
+    }
+    .feature-list {
+        list-style: none;
+        padding: 0;
+    }
+    .feature-list li {
+        padding: 12px;
+        background: #f8f9fa;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-container">
+    <div class="user-header">
+        <h2>👤 User Management</h2>
+        <p>Manage family members and facial recognition</p>
+    </div>
+
+    <div class="user-card">
+        <h3>📋 Current User</h3>
+        <div class="user-info">
+            <label>Username:</label>
+            <value>{{ current_user.username }}</value>
+
+            <label>Email:</label>
+            <value>{{ current_user.email or 'Not set' }}</value>
+
+            <label>Member Since:</label>
+            <value>{{ current_user.created_at.strftime('%B %d, %Y') if current_user.created_at else 'N/A' }}</value>
+        </div>
+        <button class="action-btn btn-primary" onclick="alert('User preferences coming soon!')">
+            ⚙️ Edit Preferences
+        </button>
+    </div>
+
+    <div class="user-card">
+        <h3>🎯 Facial Recognition</h3>
+        <p style="color: #666; margin-bottom: 20px;">Enroll your face to enable automatic recognition</p>
+
+        <div class="feature-list">
+            <li>✅ Multi-user facial recognition support</li>
+            <li>✅ Personalized greetings for each family member</li>
+            <li>✅ Individual dietary preferences and health goals</li>
+            <li>✅ Secure face encoding storage</li>
+        </div>
+
+        <button class="action-btn btn-success" onclick="enrollFace()">
+            📸 Enroll My Face
+        </button>
+        <button class="action-btn btn-primary" onclick="window.location.href='/camera-feed'">
+            📹 Test Face Recognition
+        </button>
+    </div>
+
+    <div class="user-card">
+        <h3>👨‍👩‍👧‍👦 Family Members</h3>
+        <p style="color: #666; margin-bottom: 20px;">Add family members to track individual preferences</p>
+
+        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+            <p style="color: #999;">No additional family members enrolled yet</p>
+        </div>
+
+        <button class="action-btn btn-success" style="margin-top: 15px;" onclick="alert('Family member enrollment coming soon!')">
+            ➕ Add Family Member
+        </button>
+    </div>
+</div>
+
+<script>
+function enrollFace() {
+    if (confirm('This will open the camera to capture your face for recognition. Continue?')) {
+        alert('Face enrollment feature coming soon!\n\nFor now, use the Live Cameras page to test facial recognition.');
+        window.location.href = '/camera-feed';
+    }
+}
+</script>
+{% endblock %}
