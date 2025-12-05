@@ -1187,7 +1187,7 @@ def get_inventory_data():
 
 @app.route('/static/<path:path>')
 def send_static(path):
-    return send_from_directory('static', path)
+    return send_from_directory(static_folder, path)
 
 @app.route('/nutrition_summary')
 @login_required
