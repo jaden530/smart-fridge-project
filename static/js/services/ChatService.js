@@ -148,22 +148,25 @@ class ChatService {
      * Process a single message chunk
      */
     async processMessageChunk(chunk) {
-        // Check for emotion tags [EMOTION] (single brackets)
-        const emotionMatch = chunk.match(/\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED|NEUTRAL)\]/);
-        if (emotionMatch) {
-            const emotion = emotionMatch[1];
+        // Extract and handle emotions (but keep the text)
+        const emotionRegex = /\[(HAPPY|EXCITED|THINKING|SURPRISED|CONCERNED|NEUTRAL)\]/g;
+        let match;
+        while ((match = emotionRegex.exec(chunk)) !== null) {
+            const emotion = match[1];
             this.currentEmotion = emotion;
 
             if (this.callbacks.onEmotion) {
                 this.callbacks.onEmotion({ emotion });
             }
-            return; // Don't add emotion tags to message
         }
 
-        // Check for action tags [[ACTION_TYPE:params]] (double brackets)
-        const actionMatch = chunk.match(/\[\[(.*?):(.*?)\]\]/);
-        if (actionMatch) {
-            const [, actionType, params] = actionMatch;
+        // Remove emotion markers from text
+        let cleanText = chunk.replace(emotionRegex, '');
+
+        // Extract and handle actions (but keep the text)
+        const actionRegex = /\[\[(.*?):(.*?)\]\]/g;
+        while ((match = actionRegex.exec(cleanText)) !== null) {
+            const [, actionType, params] = match;
 
             if (this.callbacks.onAction) {
                 this.callbacks.onAction({ actionType, params });
@@ -177,12 +180,17 @@ class ChatService {
                     console.error('Action execution error:', error);
                 }
             }
-            return; // Don't add action tags to message
         }
 
-        // Regular text chunk
-        this.currentMessage += chunk;
-        this.sentenceBuffer += chunk;
+        // Remove action markers from text
+        cleanText = cleanText.replace(actionRegex, '');
+
+        // Only process if there's actual text left
+        if (cleanText.length === 0) return;
+
+        // Add cleaned text to message
+        this.currentMessage += cleanText;
+        this.sentenceBuffer += cleanText;
 
         // Trigger chunk callback
         if (this.callbacks.onMessageChunk) {
