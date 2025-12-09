@@ -34,16 +34,16 @@ class AvatarLipSync {
             // Open vowels (A, AH) - Wide open
             WIDE: {
                 smilePath: 'M 52 70 Q 70 72 88 70',
-                smileVisible: true,
+                smileVisible: false,  // Hide smile when mouth is wide open
                 opening: { opacity: 1, rx: 13, ry: 9, cy: 77 },
-                teeth: { visible: false },
+                teeth: { visible: true, opacity: 0.95 },  // Show teeth for depth
                 tongue: { visible: false }
             },
 
             // Round vowels (O, OO, W) - Round opening
             ROUND: {
                 smilePath: 'M 60 72 Q 70 73 80 72',
-                smileVisible: true,
+                smileVisible: false,  // Hide smile for round mouth
                 opening: { opacity: 1, rx: 8, ry: 8, cy: 76 },
                 teeth: { visible: false },
                 tongue: { visible: false }
@@ -54,7 +54,7 @@ class AvatarLipSync {
                 smilePath: 'M 54 71 Q 70 75 86 71',
                 smileVisible: true,
                 opening: { opacity: 1, rx: 11, ry: 6, cy: 76 },
-                teeth: { visible: false },
+                teeth: { visible: true, opacity: 0.9 },  // Show teeth for E sound
                 tongue: { visible: false }
             },
 
@@ -64,7 +64,7 @@ class AvatarLipSync {
                 smileVisible: true,
                 opening: { opacity: 0.6, rx: 9, ry: 5, cy: 76 },
                 teeth: { visible: true, opacity: 1 },
-                tongue: { visible: true, opacity: 0.9, cy: 76, ry: 2 }
+                tongue: { visible: true, opacity: 1, cy: 76, ry: 2 }  // Full opacity for tongue
             },
 
             // F/V sound - Teeth on lower lip
@@ -72,7 +72,7 @@ class AvatarLipSync {
                 smilePath: 'M 58 73 Q 70 75 82 73',
                 smileVisible: true,
                 opening: { opacity: 0.5, rx: 8, ry: 4, cy: 76 },
-                teeth: { visible: true, opacity: 0.9, y: 74 },
+                teeth: { visible: true, opacity: 1, y: 74 },  // Full opacity for teeth
                 tongue: { visible: false }
             },
 
@@ -91,7 +91,7 @@ class AvatarLipSync {
                 smileVisible: true,
                 opening: { opacity: 0.8, rx: 9, ry: 5, cy: 76 },
                 teeth: { visible: false },
-                tongue: { visible: true, opacity: 0.8, cy: 75, ry: 2 }
+                tongue: { visible: true, opacity: 1, cy: 75, ry: 2.5 }  // Full opacity, slightly larger
             },
 
             // Small opening (default consonants)

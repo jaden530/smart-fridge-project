@@ -160,8 +160,11 @@ class ChatService {
             }
         }
 
-        // Remove emotion markers from text
-        let cleanText = chunk.replace(emotionRegex, '');
+        // Remove emotion markers from text, replacing with space to preserve word boundaries
+        let cleanText = chunk.replace(emotionRegex, ' ');
+
+        // Clean up multiple consecutive spaces
+        cleanText = cleanText.replace(/\s+/g, ' ');
 
         // Extract and handle actions (but keep the text)
         const actionRegex = /\[\[(.*?):(.*?)\]\]/g;
@@ -182,20 +185,23 @@ class ChatService {
             }
         }
 
-        // Remove action markers from text
-        cleanText = cleanText.replace(actionRegex, '');
+        // Remove action markers from text, replacing with space
+        cleanText = cleanText.replace(actionRegex, ' ');
 
-        // Only process if there's actual text left
-        if (cleanText.length === 0) return;
+        // Clean up multiple consecutive spaces again
+        cleanText = cleanText.replace(/\s+/g, ' ');
+
+        // Only process if there's actual text left (after trimming for check only)
+        if (cleanText.trim().length === 0) return;
 
         // Add cleaned text to message
         this.currentMessage += cleanText;
         this.sentenceBuffer += cleanText;
 
-        // Trigger chunk callback
+        // Trigger chunk callback with cleaned text
         if (this.callbacks.onMessageChunk) {
             this.callbacks.onMessageChunk({
-                chunk,
+                chunk: cleanText,  // Pass cleaned text instead of original
                 fullMessage: this.currentMessage,
                 emotion: this.currentEmotion
             });
